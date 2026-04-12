@@ -3,14 +3,6 @@
 iStumbler Labs CardView.Framework — CardView is a good looking text view for iOS, macOS, 
 and tvOS with convenience methods for formatting text, embedding controls and scaling content.
 
-<a id="support"></a>
-## Support CardView!
-
-Are you using CardView in your apps? Would you like to help support the project and get a sponsor credit?
-
-Visit our [Patreon Page](https://www.patreon.com/istumblerlabs) and patronize us in exchange for great rewards!
-
-
 <a id="classes"></a>
 ## Classes
 
@@ -138,10 +130,10 @@ typedef NS_ENUM(NSUInteger, CardStyle) {
 <a id="Changes"></a>
 ## Changes
 
-- `2.0.1` - [12 April 2026](https://github.com/alfwatt/CardView/releases/tag/2.0.1)
+- `2.0.1` - [12 Apr 2026](../../releases/tag/2.0.1)
   - many small fixes
 
-- `2.0.0` - [28 April 2025](https://github.com/alfwatt/CardView/releases/tag/2.0.0) 
+- `2.0.0` - [28 Apr 2025](../../releases/tag/2.0.0) 
   - Breaking API changes: 
     - `CardTextView` is simplifed and tersified
     - `+formatted:withAttributes:` is now a class method
@@ -153,18 +145,18 @@ typedef NS_ENUM(NSUInteger, CardStyle) {
   - Hex formatter for abritrary data
   - Depend on ILFoundation
 
-- 1.3 — [19 August 2024]()
+- `1.3`   — [19 Aug 2024](../../releases/tag/1.3)
   - Swift Package Manager Support
 
-- 1.2 – [19 May 2017]()
+- `1.2`   – [19 May 2017](../../releases/tag/1.2)
 
-- 1.1 — [29 May 2016](https://github.com/alfwatt/CardView/releases/tag/1.1)
+- `1.1`   — [29 May 2016](../../releases/tag/1.1)
   - Add CardBytesFormatter
 
-- 1.0.1 — [13 May 2016](https://github.com/alfwatt/CardView/releases/tag/1.0.1)
+- `1.0.1` — [13 May 2016](../../releases/tag/1.0.1)
   - Add CardListFormatter
 
-- 1.0 — [27 April 2016](https://github.com/alfwatt/CardView/releases/tag/1.0)
+- `1.0`   — [27 Apr 2016](../../releases/tag/1.0)
   - First!
 
 ========
@@ -174,7 +166,7 @@ typedef NS_ENUM(NSUInteger, CardStyle) {
 
     The MIT License (MIT)
 
-    Copyright © 2014-2024 Alf Watt
+    Copyright © 2014-2026 Alf Watt
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
