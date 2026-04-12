@@ -6,9 +6,6 @@
 #endif
 #import "include/NSMutableAttributedString+CardView.h"
 
-#define NSAS NSAttributedString
-#define NSMAS NSMutableAttributedString
-
 static NSMutableDictionary* formatterRegistry;
 
 static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDAttributeName";
@@ -126,7 +123,7 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
 // MARK: -
 
 - (void) clearCard {
-    [self.textStorage setAttributedString:[NSAS.alloc initWithString:@""]];
+    [self.textStorage setAttributedString:[NSAttributedString.alloc initWithString:@""]];
 }
 
 // MARK: - IBActions
@@ -337,7 +334,7 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
     NSUUID* promise = NSUUID.new;
     NSMutableDictionary* promisedAttributes = attributes.mutableCopy;
     promisedAttributes[CardTextPromiseUUIDAttributeName] = promise.UUIDString;
-    [self.textStorage appendAttributedString:[NSAS.alloc initWithString:@"…" attributes:promisedAttributes]];
+    [self.textStorage appendAttributedString:[NSAttributedString.alloc initWithString:@"…" attributes:promisedAttributes]];
     return promise;
 }
 

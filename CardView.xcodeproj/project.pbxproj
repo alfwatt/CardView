@@ -90,6 +90,13 @@
 			remoteGlobalIDString = 7503F5D12C74205400B8CFC9;
 			remoteInfo = colorist;
 		};
+		75185D812F8B703D00B20AF3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 758739862DB4960B00630067 /* ILFoundation.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 75EEF6A92D638CFB00B2EE80;
+			remoteInfo = ILFoundationSwift;
+		};
 		7543C7EF2D775A0900F59FEA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0867D690FE84028FC02AAC07 /* Project object */;
@@ -397,6 +404,7 @@
 			isa = PBXGroup;
 			children = (
 				7587398F2DB4960B00630067 /* ILFoundation.framework */,
+				75185D822F8B703D00B20AF3 /* ILFoundationSwift.framework */,
 				758739932DB4960B00630067 /* ILFoundationTests.xctest */,
 			);
 			name = Products;
@@ -674,6 +682,13 @@
 			remoteRef = 7503F5E32C7420B000B8CFC9 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		75185D822F8B703D00B20AF3 /* ILFoundationSwift.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = ILFoundationSwift.framework;
+			remoteRef = 75185D812F8B703D00B20AF3 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		7550C5B81F5A43D0003A0691 /* KitBridge.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
@@ -875,7 +890,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = Sources/CardView/Info.plist;
 				INSTALL_PATH = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.4;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++14";
 				PRODUCT_BUNDLE_IDENTIFIER = net.istumbler.labs.cardview;
@@ -901,7 +916,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = Sources/CardView/Info.plist;
 				INSTALL_PATH = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.4;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++14";
 				PRODUCT_BUNDLE_IDENTIFIER = net.istumbler.labs.cardview;
