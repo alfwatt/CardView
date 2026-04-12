@@ -138,7 +138,10 @@ typedef NS_ENUM(NSUInteger, CardStyle) {
 <a id="Changes"></a>
 ## Changes
 
-- CardView 2.0.0 - 20 April 2025 
+- `2.0.1` - [12 April 2026](https://github.com/alfwatt/CardView/releases/tag/2.0.1)
+  - many small fixes
+
+- `2.0.0` - [28 April 2025](https://github.com/alfwatt/CardView/releases/tag/2.0.0) 
   - Breaking API changes: 
     - `CardTextView` is simplifed and tersified
     - `+formatted:withAttributes:` is now a class method
@@ -149,12 +152,20 @@ typedef NS_ENUM(NSUInteger, CardStyle) {
   - Adds Promises and Style Stack to `CardTextView`
   - Hex formatter for abritrary data
   - Depend on ILFoundation
-  - 
-- 1.3 — 19 August 2024: Swift Package Manager Support
-- 1.2 – 19 May 2017: 
-- 1.1 — 29 May 2016: Add CardBytesFormatter
-- 1.0.1 — 13 May 2016: Add CardListFormatter
-- 1.0 — 27 April 2016: Initial Version
+
+- 1.3 — [19 August 2024]()
+  - Swift Package Manager Support
+
+- 1.2 – [19 May 2017]()
+
+- 1.1 — [29 May 2016](https://github.com/alfwatt/CardView/releases/tag/1.1)
+  - Add CardBytesFormatter
+
+- 1.0.1 — [13 May 2016](https://github.com/alfwatt/CardView/releases/tag/1.0.1)
+  - Add CardListFormatter
+
+- 1.0 — [27 April 2016](https://github.com/alfwatt/CardView/releases/tag/1.0)
+  - First!
 
 ========
 
