@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, retain) NSArray<NSNumber*>* columns;
 
 /// the top style on the style stack
-/// if there are non styles on the  stack, return NSParagraphStyle.defaultParagraphStyle
+/// if there are no styles on the  stack, return NSParagraphStyle.defaultParagraphStyle
 @property(nonatomic,readonly) NSParagraphStyle* topStyle;
 
 // MARK: - Formatter Registry
@@ -43,6 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 // MARK: -
 
+/// remove all content from the card
 - (void) clearCard;
 
 // MARK: - Column Styles

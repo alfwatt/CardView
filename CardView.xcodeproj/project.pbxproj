@@ -286,6 +286,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		75185D8F2F8C984400B20AF3 /* CardViewSwift */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CardViewSwift; sourceTree = "<group>"; };
 		7543C7EB2D775A0900F59FEA /* CardViewTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CardViewTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -446,6 +447,7 @@
 			isa = PBXGroup;
 			children = (
 				75FB2B352C6D64F9004F7FF0 /* CardView */,
+				75185D8F2F8C984400B20AF3 /* CardViewSwift */,
 				754780BC2C56E84100C7C25C /* Deck */,
 			);
 			path = Sources;
@@ -594,6 +596,9 @@
 			);
 			dependencies = (
 				758739A72DB4979400630067 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				75185D8F2F8C984400B20AF3 /* CardViewSwift */,
 			);
 			name = "CardView (macOS)";
 			productInstallPath = "$(HOME)/Library/Frameworks";

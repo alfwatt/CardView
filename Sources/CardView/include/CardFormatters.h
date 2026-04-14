@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// String to use between each item in the array
 @property(nonatomic,retain,nullable) NSString* separator;
 
-/// formatter to use for each item in the array
+/// Formatter to use for each item in the array
 @property(nonatomic,retain,nullable) NSFormatter* itemFormatter;
 
 @end
@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// formats data values into string with byte count: "420 Bytes"
 @interface CardDataFormatter : CardFormatters
 
-/// YES to have the formatter display data as a
+/// YES to have the formatter display data as hex values, NO to display as byte counts
 @property(nonatomic,assign) BOOL formatAsHex;
 
 /// Number of bytes for each line if formatAsHex is YES

@@ -4,15 +4,14 @@ import CardView
 class CardController: NSViewController {
     @IBOutlet var cardView: CardTextView!
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        cardView.append("Hello, World!")
+        cardView.append("This is a card view.\n")
     }
 
     override var representedObject: Any? {
         didSet {
-        // Update the view, if already loaded.
         }
     }
 }

@@ -6,6 +6,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// @enum CardStyle Defines the various text styles
 typedef NS_ENUM(NSUInteger, CardStyle) {
     CardPlainStyle,
     CardHeaderStyle,
@@ -16,14 +17,16 @@ typedef NS_ENUM(NSUInteger, CardStyle) {
     CardMonospaceStyle
 };
 
+// MARK: -
+
 @protocol CardTextStyle
 
 // MARK: - Attributes
 
-/// @return the attributes for the style provided
-/// @param textStyle the style to return attributes for
-/// @param fontSize the font size to use for the attributes
-/// @param graphStyle the paragraph style to use for the attributes
+/// @return attributes for the
+/// @param textStyle provided at the
+/// @param fontSize  provided with the
+/// @param graphStyle provided
 ///
 + (NSDictionary*) textStyle:(CardStyle) textStyle fontSize:(CGFloat) fontSize graphStyle:(NSParagraphStyle*) graphStyle;
 

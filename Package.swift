@@ -16,6 +16,16 @@ let package = Package(
         .target(
             name: "CardView",
             dependencies: ["KitBridge", "ILFoundation"]
+        ),
+        .target(
+            name: "Deck",
+            dependencies: ["CardView"]
+        )
+    ],
+    tests: [
+        .testTarget(
+            name: "CardViewTests",
+            dependencies: ["CardView"]
         )
     ]
 )
