@@ -1,31 +1,34 @@
-// swift-tools-version:5.10
+// swift-tools-version:6.1
 
 import PackageDescription
 
 let package = Package(
     name: "CardView",
+    defaultLocalization: "en",
     platforms: [.macOS(.v12), .iOS(.v14), .tvOS(.v14)],
     products: [
-        .library( name: "CardView", type: .dynamic, targets: ["CardView"])
+        .library(name: "CardView", type: .dynamic, targets: ["CardView"])
     ],
     dependencies: [
-      .package( url: "https://github.com/alfwatt/KitBridge.git", from: "2.2.0"),
-      .package( url: "https://github.com/alfwatt/ILFoundation.git", from: "1.2.0")
+        .package(url: "https://github.com/alfwatt/KitBridge.git", from: "2.2.0"),
+        .package(url: "https://github.com/alfwatt/ILFoundation.git", from: "1.2.0")
     ],
     targets: [
         .target(
             name: "CardView",
-            dependencies: ["KitBridge", "ILFoundation"]
+            dependencies: [
+                .product(name: "KitBridge", package: "KitBridge"),
+                .product(name: "ILFoundation", package: "ILFoundation")
+            ],
+            publicHeadersPath: "include"
         ),
         .target(
             name: "Deck",
-            dependencies: ["CardView"]
-        )
-    ],
-    tests: [
-        .testTarget(
-            name: "CardViewTests",
-            dependencies: ["CardView"]
+            dependencies: ["CardView"],
+            exclude: ["Deck.entitlements"],
+            resources: [
+                .process("Assets.xcassets")
+            ]
         )
     ]
 )

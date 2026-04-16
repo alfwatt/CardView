@@ -902,6 +902,7 @@
 				PRODUCT_NAME = CardView;
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
 				WRAPPER_EXTENSION = framework;
 			};
 			name = Debug;
@@ -928,6 +929,7 @@
 				PRODUCT_NAME = CardView;
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
 				WRAPPER_EXTENSION = framework;
 			};
 			name = Release;
