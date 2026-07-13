@@ -32,30 +32,30 @@ typedef NS_ENUM(NSUInteger, CardStyle) {
 
 // MARK: - Styles
 
-- (NSAttributedString*) append:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
-- (NSAttributedString*) append:(NSString*) string textStyle:(CardStyle) textStyle size:(CGFloat) fontSize style:(NSParagraphStyle*) graphStyle;
+- (nullable NSAttributedString*) append:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) append:(NSString*) string textStyle:(CardStyle) textStyle size:(CGFloat) fontSize style:(NSParagraphStyle*) graphStyle;
 
-- (NSAttributedString*) appendHeader:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendSubhead:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendCentered:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendLabel:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendGray:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendMonospace:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendLink:(NSString*) url text:(NSString*) label size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendHeader:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendSubhead:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendCentered:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendLabel:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendGray:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendMonospace:(NSString*) string size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendLink:(NSString*) url text:(NSString*) label size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
 
 // MARK: - Rules & Spacing
 
-- (NSAttributedString*) appendRule:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendRuleWithAccentColor:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendRuleWithColor:(ILColor*) color width:(CGFloat) width style:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendNewline:(CGFloat) size style:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendTab:(CGFloat) size style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendRule:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendRuleWithAccentColor:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendRuleWithColor:(ILColor*) color width:(CGFloat) width style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendNewline:(CGFloat) size style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendTab:(CGFloat) size style:(NSParagraphStyle*) style;
 
 // MARK: - Images
 
-- (NSAttributedString*) appendImage:(ILImage*) image size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
-- (NSAttributedString*) appendImage:(ILImage*) image withAttributes:(NSDictionary*) attributes;
-- (NSAttributedString*) appendImage:(ILImage*) image withAttributes:(NSDictionary*) attributes target:(nullable id) target action:(SEL) action;
+- (nullable NSAttributedString*) appendImage:(ILImage*) image size:(CGFloat) fontSize style:(NSParagraphStyle*) style;
+- (nullable NSAttributedString*) appendImage:(ILImage*) image withAttributes:(NSDictionary*) attributes;
+- (nullable NSAttributedString*) appendImage:(ILImage*) image withAttributes:(NSDictionary*) attributes target:(nullable id) target action:(SEL) action;
 
 @end
 

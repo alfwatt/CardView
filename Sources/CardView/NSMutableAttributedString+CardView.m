@@ -58,24 +58,20 @@ NSString* const CardTextAttacmentTargetName = @"CardTextAttacmentTarget";
 
 // MARK: - Resizable Styles
 
-- (nonnull NSAttributedString *)append:(nonnull NSString *)string size:(CGFloat)fontSize style:(nonnull NSParagraphStyle *)style {
-    NSAttributedString* attrString = nil;
-    if (string) {
-        NSDictionary* attrs = [NSTextStorage textStyle:CardPlainStyle fontSize:fontSize graphStyle:style];
-        attrString = [NSAttributedString.alloc initWithString:string attributes:attrs];
-        [self appendAttributedString:attrString];
-    }
+- (NSAttributedString*)append:(NSString*)string size:(CGFloat)fontSize style:(NSParagraphStyle*)style {
+    assert(string && style);
+    NSDictionary* attrs = [NSTextStorage textStyle:CardPlainStyle fontSize:fontSize graphStyle:style];
+    NSAttributedString* attrString = [NSAttributedString.alloc initWithString:string attributes:attrs];
+    [self appendAttributedString:attrString];
+
     return attrString;
 }
 
 - (NSAttributedString*) append:(NSString*) string textStyle:(CardStyle) textStyle size:(CGFloat) fontSize style:(NSParagraphStyle*) graphStyle {
-    NSAttributedString* attrString = nil;
-
-    if (string) {
-        NSDictionary* attrs = [NSTextStorage textStyle:textStyle fontSize:fontSize graphStyle:graphStyle];
-        attrString = [NSAttributedString.alloc initWithString:string attributes:attrs];
-        [self appendAttributedString:attrString];
-    }
+    assert(string);
+    NSDictionary* attrs = [NSTextStorage textStyle:textStyle fontSize:fontSize graphStyle:graphStyle];
+    NSAttributedString* attrString = [NSAttributedString.alloc initWithString:string attributes:attrs];
+    [self appendAttributedString:attrString];
 
     return attrString;
 }
@@ -105,20 +101,21 @@ NSString* const CardTextAttacmentTargetName = @"CardTextAttacmentTarget";
 }
 
 - (NSAttributedString*) appendLink:(NSString*) url text:(NSString*) label size:(CGFloat) fontSize style:(NSParagraphStyle*) style {
-    NSAttributedString* attrString = nil;
-    if (url) {
-        NSMutableDictionary* attrs = [self.class textStyle:CardPlainStyle fontSize:fontSize graphStyle:style].mutableCopy;
-        attrs[NSLinkAttributeName] = url;
-        attrString = [NSAttributedString.alloc initWithString:(label ?: url) attributes:attrs];
-        [self appendAttributedString:attrString];
-    }
+    assert(url && label && style);
+    NSMutableDictionary* attrs = [self.class textStyle:CardPlainStyle fontSize:fontSize graphStyle:style].mutableCopy;
+    attrs[NSLinkAttributeName] = url;
+    NSAttributedString* attrString = [NSAttributedString.alloc initWithString:(label ?: url) attributes:attrs];
+    [self appendAttributedString:attrString];
+
     return attrString;
 }
 
 // MARK: - Rules
 
 - (NSAttributedString*) appendRule:(NSParagraphStyle*) style {
+    assert(style);
     NSAttributedString* rule = [self appendRuleWithColor:ILColor.disabledControlTextColor width:1 style:style];
+
     return rule;
 }
 
@@ -144,44 +141,46 @@ NSString* const CardTextAttacmentTargetName = @"CardTextAttacmentTarget";
     [self appendGray:@"———" size:ILFont.defaultFontSize style:style];
 #endif
     [self appendNewline:ILFont.defaultFontSize style:style]; // and clears the next line below it
+
     return attrString;
 }
 
 - (NSAttributedString*) appendNewline:(CGFloat) size style:(NSParagraphStyle*) style {
+    assert(style);
     NSAttributedString* newline = [self append:@"\n" size:size style:style];
+
     return newline;
 }
 
 - (NSAttributedString*) appendTab:(CGFloat) size style:(NSParagraphStyle*) style {
+    assert(style);
     NSAttributedString* newline = [self append:@"\t" size:size style:style];
+
     return newline;
 }
 
 // MARK: - Images
 
 - (NSAttributedString*) appendImage:(ILImage*) image size:(CGFloat) fontSize style:(NSParagraphStyle*) style {
-    return [self appendImage:image withAttributes:[self.class textStyle:CardCenteredStyle fontSize:fontSize graphStyle:style]];
+    assert(image && style);
+    NSAttributedString* imageString = [self appendImage:image withAttributes:[self.class textStyle:CardCenteredStyle fontSize:fontSize graphStyle:style]];
+
+    return imageString;
 }
 
 - (NSAttributedString*) appendImage:(ILImage*) image withAttributes:(NSDictionary*) attributes {
-    NSAttributedString* attrString = nil;
-    if (image) {
-        NSTextAttachment* attachment = NSTextAttachment.new;
-        attachment.image = image;
-        attachment.bounds = CGRectMake(0, 0, image.size.width, image.size.height);
-        attrString = [NSAttributedString attributedStringWithAttachment:attachment];
+    assert(image && attributes);
+    NSTextAttachment* attachment = NSTextAttachment.new;
+    attachment.image = image;
+    attachment.bounds = CGRectMake(0, 0, image.size.width, image.size.height);
+    NSMutableAttributedString* attrString = [NSAttributedString attributedStringWithAttachment:attachment].mutableCopy;
 
-        if (attributes) {
-            NSMutableDictionary* attrs = attributes.mutableCopy;
-            NSMutableAttributedString* styled = attrString.mutableCopy;
+    NSMutableDictionary* attrs = attributes.mutableCopy;
+    NSMutableAttributedString* styled = attrString.mutableCopy;
 
-            attrs[NSAttachmentAttributeName] = [attrString attribute:NSAttachmentAttributeName atIndex:0 effectiveRange:nil];
-            [styled setAttributes:attrs range:NSMakeRange(0, styled.length)];
-            attrString = styled;
-        }
-
-        [self appendAttributedString:attrString];
-    }
+    attrs[NSAttachmentAttributeName] = [attrString attribute:NSAttachmentAttributeName atIndex:0 effectiveRange:nil];
+    [attrString setAttributes:attrs range:NSMakeRange(0, styled.length)];
+    [self appendAttributedString:attrString];
 
     return attrString;
 }

@@ -67,7 +67,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSAttributedString*) appendStyled:(CardStyle) style string:(NSString*)string;
 
 /// Convenience method for appending a string with a style
-
 - (NSAttributedString*) append:(NSString*) string;
 - (NSAttributedString*) appendHeader:(NSString*) string;
 - (NSAttributedString*) appendSubhead:(NSString*) string;
