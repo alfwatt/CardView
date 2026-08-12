@@ -1,5 +1,5 @@
-#if SWIFT_PACKAGE
-@import KitBridge;
+#if SWIFT_PACKAGE || __has_feature(modules)
+#import "CardViewKitBridge.h"
 #import "CardTextView.h"
 #import "CardFormatters.h"
 #import "NSMutableAttributedString+CardView.h"
@@ -13,7 +13,7 @@
 
 #else
 
-#import <KitBridge/KitBridge.h>
+#import <CardView/CardViewKitBridge.h>
 #import <CardView/CardTextView.h>
 #import <CardView/CardFormatters.h>
 #import <CardView/NSMutableAttributedString+CardView.h>
@@ -26,5 +26,3 @@
 #endif // IL_APP_KIT
 
 #endif
-
-

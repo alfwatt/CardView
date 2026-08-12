@@ -1,10 +1,6 @@
-#if SWIFT_PACKAGE
-@import KitBridge;
-#else
-#import <KitBridge/KitBridge.h>
-#endif
+#import "CardViewKitBridge.h"
 
-#if SWIFT_PACKAGE
+#if SWIFT_PACKAGE || __has_feature(modules)
 #import "CardTextStyle.h"
 #else
 #import <CardView/CardTextStyle.h>

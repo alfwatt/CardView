@@ -1,8 +1,4 @@
-#if SWIFT_PACKAGE
-@import KitBridge;
-#else
-#import <KitBridge/KitBridge.h>
-#endif
+#import "CardViewKitBridge.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
