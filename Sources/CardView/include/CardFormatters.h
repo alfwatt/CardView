@@ -1,8 +1,4 @@
-#if SWIFT_PACKAGE
 @import KitBridge;
-#else
-#import <KitBridge/KitBridge.h>
-#endif
 
 NS_ASSUME_NONNULL_BEGIN
 

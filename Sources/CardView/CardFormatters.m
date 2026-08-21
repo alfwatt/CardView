@@ -1,10 +1,6 @@
 #import "include/CardFormatters.h"
 
-#if SWIFT_PACKAGE || __has_feature(modules)
 @import ILFoundation;
-#else
-#import <ILFoundation/ILFoundation.h>
-#endif
 
 static CGFloat unit_scale = 0.9;
 

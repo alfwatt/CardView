@@ -1,10 +1,5 @@
-#if SWIFT_PACKAGE
 @import KitBridge;
 #import "CardTextStyle.h"
-#else
-#import <KitBridge/KitBridge.h>
-#import <CardView/CardTextStyle.h>
-#endif
 
 NS_ASSUME_NONNULL_BEGIN
 
