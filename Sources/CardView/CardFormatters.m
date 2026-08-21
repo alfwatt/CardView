@@ -1,6 +1,10 @@
 #import "include/CardFormatters.h"
 
+#if __has_include(<ILFoundation/ILFoundation.h>)
+#import <ILFoundation/ILFoundation.h>
+#else
 @import ILFoundation;
+#endif
 
 static CGFloat unit_scale = 0.9;
 

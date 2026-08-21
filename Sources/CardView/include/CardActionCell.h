@@ -1,4 +1,8 @@
+#if __has_include(<KitBridge/KitBridge.h>)
+#import <KitBridge/KitBridge.h>
+#else
 @import KitBridge;
+#endif
 
 #if IL_APP_KIT
 /// An NSTextAttachmentCell for displaying a button in a CardTextView
