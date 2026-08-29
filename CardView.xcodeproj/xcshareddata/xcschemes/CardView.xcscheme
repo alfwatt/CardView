@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8DC2EF4F0486A6940098B216"
+               BlueprintIdentifier = "75BE80AE1F5F66C200453938"
                BuildableName = "CardView.framework"
-               BlueprintName = "CardView (macOS)"
+               BlueprintName = "CardView"
                ReferencedContainer = "container:CardView.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -43,9 +43,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8DC2EF4F0486A6940098B216"
+            BlueprintIdentifier = "75BE80AE1F5F66C200453938"
             BuildableName = "CardView.framework"
-            BlueprintName = "CardView (macOS)"
+            BlueprintName = "CardView"
             ReferencedContainer = "container:CardView.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -59,9 +59,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8DC2EF4F0486A6940098B216"
+            BlueprintIdentifier = "75BE80AE1F5F66C200453938"
             BuildableName = "CardView.framework"
-            BlueprintName = "CardView (macOS)"
+            BlueprintName = "CardView"
             ReferencedContainer = "container:CardView.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
