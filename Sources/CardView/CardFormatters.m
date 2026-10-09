@@ -645,45 +645,41 @@ static unsigned long long const EB = (PB * KB);
 /// https://en.wikipedia.org/wiki/Continued_fraction
 /// accuracy like 1.0e+4
 void fractionDouble(double floating, double accuracy, long* numerator, long* denominator) {
-
-    // generate a vector of fraction terms
+    // walk the continued fraction terms, accumulating the numerator/denominator
+    // convergents directly (h/k recurrence) so there's no fixed-size term buffer
+    // to overflow and no separate "unwind" pass that can drop a term. `accuracy`
+    // bounds how large the denominator is allowed to grow.
     double floatPart = floating;
-    long wholePart = floor(floatPart);
-    long terms[64] = { 0.0 }; // TODO figure a better limit here
-    long termIndex = 0;
-    terms[termIndex++] = wholePart;
-
+    long wholePart = (long)floor(floatPart);
     floatPart -= wholePart;
 
-    double multiple = 1;
-    while (floatPart != 0.0 && (floatPart > -accuracy) && (multiple < accuracy)) {
+    long h1 = 1, h2 = wholePart; // numerator convergents
+    long k1 = 0, k2 = 1;         // denominator convergents
+
+    int termsLeft = 64; // hard cap on iterations, no array needed
+    while (floatPart > 0.0 && termsLeft-- > 0) {
         floatPart = 1.0 / floatPart;
-        multiple = multiple * (floatPart + 1);
-        wholePart = floor(floatPart);
-        terms[termIndex++] = wholePart; // TODO check terms count
-        floatPart -= wholePart;
-    }
+        long term = (long)floor(floatPart);
 
-    // reduce terms into numerator and denominator, unwinding termIndex
-    long num = 1;
-    double den = terms[termIndex];
-
-    while(--termIndex > 0) {
-        double num2 = terms[termIndex];
-        // swap numerator and denominator
-        if (den >= 1.0) {
-            num = floor(den);
+        long h = term * h2 + h1;
+        long k = term * k2 + k1;
+        if (k > accuracy) {
+            break; // adding this term would exceed the requested denominator bound
         }
-        den = num2;
+
+        h1 = h2; h2 = h;
+        k1 = k2; k2 = k;
+
+        floatPart -= term;
     }
 
     // write the num and dem to the out parameters
     if (numerator != NULL) {
-        *numerator = num;
+        *numerator = h2;
     }
 
     if (denominator != NULL) {
-        *denominator = floor(den);
+        *denominator = k2;
     }
 }
 

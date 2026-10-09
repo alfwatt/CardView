@@ -129,7 +129,6 @@
 		754780C12C56E84300C7C25C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		754780C42C56E84300C7C25C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		754780C62C56E84300C7C25C /* Deck.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Deck.entitlements; sourceTree = "<group>"; };
-		754EA43F2C73D4EF004BBC13 /* Package.resolved */ = {isa = PBXFileReference; lastKnownFileType = text; path = Package.resolved; sourceTree = "<group>"; };
 		7550C5B21F5A43D0003A0691 /* KitBridge.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = KitBridge.xcodeproj; path = ../KitBridge/KitBridge.xcodeproj; sourceTree = "<group>"; };
 		7571BF711CCDB68100021159 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		7571BFB81CD579CF00021159 /* CardFormatters.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CardFormatters.h; sourceTree = "<group>"; };
@@ -203,7 +202,6 @@
 			children = (
 				7571BF711CCDB68100021159 /* README.md */,
 				75FB2B372C6D6545004F7FF0 /* Package.swift */,
-				754EA43F2C73D4EF004BBC13 /* Package.resolved */,
 				75FB2B362C6D64F9004F7FF0 /* Sources */,
 				7543C7EB2D775A0900F59FEA /* CardViewTests */,
 				0867D69AFE84028FC02AAC07 /* Frameworks */,
