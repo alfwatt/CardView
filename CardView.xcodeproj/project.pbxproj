@@ -25,7 +25,6 @@
 		75BE80C71F5F671700453938 /* CardTextView.h in Headers */ = {isa = PBXBuildFile; fileRef = 75AC2C510A8F78D1003AAE72 /* CardTextView.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		75BE80D31F5F710300453938 /* CardView.h in Headers */ = {isa = PBXBuildFile; fileRef = 75AC2C600A8F78D9003AAE72 /* CardView.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		75F3FD6A30437B1100979120 /* KitBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 75F3FD693043791000979120 /* KitBridge.framework */; };
-		75F3FD6B30437B1100979120 /* KitBridge.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 75F3FD693043791000979120 /* KitBridge.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		75F3FD6C30437E1C00979120 /* CardViewCell.h in Headers */ = {isa = PBXBuildFile; fileRef = 75DE4323196E6A1B0022311F /* CardViewCell.h */; platformFilters = (macos, ); settings = {ATTRIBUTES = (Public, ); }; };
 		75F3FD6D30437E3D00979120 /* CardViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 75DE4324196E6A1B0022311F /* CardViewCell.m */; platformFilters = (macos, ); };
 		75F3FD6E30437E4400979120 /* CardActionCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 75AC2C480A8F78D1003AAE72 /* CardActionCell.m */; platformFilters = (macos, ); };
@@ -100,17 +99,6 @@
 			dstSubfolderSpec = 10;
 			files = (
 				7587399F2DB4963F00630067 /* ILFoundation.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		759413D02DB422F90077A478 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				75F3FD6B30437B1100979120 /* KitBridge.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -367,7 +355,6 @@
 				75BE80AA1F5F66C200453938 /* Sources */,
 				75BE80AB1F5F66C200453938 /* Frameworks */,
 				75BE80AD1F5F66C200453938 /* Resources */,
-				759413D02DB422F90077A478 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
