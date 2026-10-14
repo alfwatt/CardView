@@ -16,13 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
 @interface CardTextView : ILTextView <ILViewLifecycle, NSLayoutManagerDelegate>
 @property(nonatomic, assign) CGFloat fontSize;
 
-/// an array of numbers describing the colum layout for the card view
-/// negative numbers are interpreted as right tabs
-/// positive numbers are interpreted as left tabs
-/// numbers between 1 & -1 are intepreted as fractional widths
-/// e.g. columns `@[@(-0.33), @(5)]` would render a right tab 1/3 of the way
-/// across the view, and a left tab five points to the right of that
-@property(nonatomic, retain) NSArray<NSNumber*>* columns;
+/// columns aren't applied to the card, push them with `pushColumns:`
+@property(nonatomic, retain) NSArray<NSNumber*>* columns
+    __attribute__((deprecated("columns aren't applied to the card, use pushColumns:")));
 
 /// the top style on the style stack
 /// if there are no styles on the  stack, return NSParagraphStyle.defaultParagraphStyle
@@ -52,8 +48,20 @@ NS_ASSUME_NONNULL_BEGIN
 // MARK: - Column Styles
 
 /// @returns an NSParagraphStyle with the columns provided rendered as tabs
-/// @param columnWidths see: `self.columns` for a description of the columnWidths array
-- (NSParagraphStyle*) paragraphStyleForColumns:(NSArray*) columnWidths;
+/// @param columnWidths an array of numbers describing the column layout:
+/// negative numbers are interpreted as right tabs, positive numbers as left tabs,
+/// numbers between 1 & -1 are interpreted as fractions of the view's width,
+/// e.g. `@[@(-0.33), @(5)]` renders a right tab 1/3 of the way across the view, and a left tab five points to the right of that
+- (NSParagraphStyle*) paragraphStyleForColumns:(NSArray<NSNumber*>*) columnWidths;
+
+/// push the style for the columns provided onto the style stack, text appended after uses the columns until it's popped
+/// @param columnWidths see: `paragraphStyleForColumns:` for a description of the columnWidths array
+/// @returns the number of styles on the stack
+- (NSUInteger) pushColumns:(NSArray<NSNumber*>*) columnWidths;
+
+/// replace the styles on the stack with the style for the columns provided, for cards which change columns between sections
+/// @param columnWidths see: `paragraphStyleForColumns:` for a description of the columnWidths array
+- (void) useColumns:(NSArray<NSNumber*>*) columnWidths;
 
 // MARK: - Style Stack
 

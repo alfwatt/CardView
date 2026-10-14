@@ -74,7 +74,6 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
 
 - (void) initView {
     self.styleStackStorage = NSMutableArray.new;
-    self.columns = @[@(-0.33), @(5)]; // 40% right-aligned with a ten pt gutter
 #if TARGET_OS_TV
     self.fontSize = 24;
 #else
@@ -184,12 +183,24 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
 }
 
 - (NSParagraphStyle*) popStyle {
-    NSParagraphStyle* topStyle = self.topStyle;
-    [self.styleStackStorage removeObjectAtIndex:0];
+    NSParagraphStyle* topStyle = nil;
+    if (self.styleStackStorage.count > 0) { // nil if the stack is empty, as documented
+        topStyle = self.styleStackStorage.firstObject;
+        [self.styleStackStorage removeObjectAtIndex:0];
+    }
     return topStyle;
 }
 
-- (NSParagraphStyle*) paragraphStyleForColumns:(NSArray*)columnWidths {
+- (NSUInteger) pushColumns:(NSArray<NSNumber*>*) columnWidths {
+    return [self pushStyle:[self paragraphStyleForColumns:columnWidths]];
+}
+
+- (void) useColumns:(NSArray<NSNumber*>*) columnWidths {
+    [self.styleStackStorage removeAllObjects];
+    [self pushColumns:columnWidths];
+}
+
+- (NSParagraphStyle*) paragraphStyleForColumns:(NSArray<NSNumber*>*)columnWidths {
     NSMutableParagraphStyle* style = NSMutableParagraphStyle.new;
     NSMutableArray* stops = NSMutableArray.new;
     CGFloat columnEdge = 0;
