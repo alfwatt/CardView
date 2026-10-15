@@ -42,4 +42,34 @@
 }
 
 @end
+
+// MARK: -
+
+@implementation CardTemplateImageCell
+
+- (void) drawWithFrame:(NSRect) frame inView:(NSView*) aView {
+    NSImage* image = self.image;
+    if (!image) {
+        return;
+    }
+
+    // draw the image, then fill it with the label color, in the view's appearance
+    [aView.effectiveAppearance performAsCurrentDrawingAppearance:^{
+        [NSGraphicsContext saveGraphicsState];
+        CGContextRef context = NSGraphicsContext.currentContext.CGContext;
+        CGContextBeginTransparencyLayerWithRect(context, frame, NULL);
+        [image drawInRect:frame fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1.0
+           respectFlipped:YES hints:nil];
+        [NSColor.labelColor set];
+        NSRectFillUsingOperation(frame, NSCompositingOperationSourceAtop);
+        CGContextEndTransparencyLayer(context);
+        [NSGraphicsContext restoreGraphicsState];
+    }];
+}
+
+- (void) drawWithFrame:(NSRect) frame inView:(NSView*) aView characterIndex:(NSUInteger) charIndex layoutManager:(NSLayoutManager*) layoutManager {
+    [self drawWithFrame:frame inView:aView];
+}
+
+@end
 #endif

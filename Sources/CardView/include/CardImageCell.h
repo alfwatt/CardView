@@ -14,4 +14,11 @@
 - (id) initWithImage:(NSImage*) cell_image;
 
 @end
+
+// MARK: -
+
+/// Draws a template image in the label color of the appearance it's drawn in, so it follows light and dark mode
+@interface CardTemplateImageCell : NSTextAttachmentCell
+
+@end
 #endif

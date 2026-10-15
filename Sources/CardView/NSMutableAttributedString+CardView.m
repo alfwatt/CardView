@@ -173,6 +173,11 @@ NSString* const CardTextAttacmentTargetName = @"CardTextAttacmentTarget";
     NSTextAttachment* attachment = NSTextAttachment.new;
     attachment.image = image;
     attachment.bounds = CGRectMake(0, 0, image.size.width, image.size.height);
+#if IL_APP_KIT
+    if (image.isTemplate) { // draw template images in the text color of the view's appearance
+        attachment.attachmentCell = [CardTemplateImageCell.alloc initImageCell:image];
+    }
+#endif
     NSMutableAttributedString* attrString = [NSAttributedString attributedStringWithAttachment:attachment].mutableCopy;
 
     NSMutableDictionary* attrs = attributes.mutableCopy;
