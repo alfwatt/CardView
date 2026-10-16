@@ -29,8 +29,8 @@
 		75F3FD6D30437E3D00979120 /* CardViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 75DE4324196E6A1B0022311F /* CardViewCell.m */; platformFilters = (macos, ); };
 		75F3FD6E30437E4400979120 /* CardActionCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 75AC2C480A8F78D1003AAE72 /* CardActionCell.m */; platformFilters = (macos, ); };
 		75F3FD6F30437E4900979120 /* CardActionCell.h in Headers */ = {isa = PBXBuildFile; fileRef = 75AC2C470A8F78D1003AAE72 /* CardActionCell.h */; platformFilters = (macos, ); settings = {ATTRIBUTES = (Public, ); }; };
-		75F3FD7030437E7400979120 /* CardRuleCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 75AC2C4E0A8F78D1003AAE72 /* CardRuleCell.m */; platformFilters = (macos, ); };
-		75F3FD7130437E7900979120 /* CardRuleCell.h in Headers */ = {isa = PBXBuildFile; fileRef = 75AC2C4D0A8F78D1003AAE72 /* CardRuleCell.h */; platformFilters = (macos, ); settings = {ATTRIBUTES = (Public, ); }; };
+		75F3FD7030437E7400979120 /* CardRuleCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 75AC2C4E0A8F78D1003AAE72 /* CardRuleCell.m */; };
+		75F3FD7130437E7900979120 /* CardRuleCell.h in Headers */ = {isa = PBXBuildFile; fileRef = 75AC2C4D0A8F78D1003AAE72 /* CardRuleCell.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		75F3FD7230437EC100979120 /* CardImageCell.h in Headers */ = {isa = PBXBuildFile; fileRef = 75AC2C490A8F78D1003AAE72 /* CardImageCell.h */; platformFilters = (macos, ); settings = {ATTRIBUTES = (Public, ); }; };
 		75F3FD7330437ECD00979120 /* CardImageCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 75AC2C4A0A8F78D1003AAE72 /* CardImageCell.m */; platformFilters = (macos, ); };
 /* End PBXBuildFile section */

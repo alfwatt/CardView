@@ -137,6 +137,13 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param object provided to be formatted
 - (void) fulfillPromise:(NSUUID*) promise withFormatted:(id) object;
 
+// MARK: - Presenting
+
+#if TARGET_OS_TV
+/// show the card full screen over the system's blur, Menu returns
+- (void) presentFullScreenFromView:(UIView*) view;
+#endif
+
 @end
 
 NS_ASSUME_NONNULL_END

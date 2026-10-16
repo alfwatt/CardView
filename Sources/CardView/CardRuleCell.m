@@ -59,3 +59,41 @@
 
 @end
 #endif
+
+#if IL_UI_KIT
+@implementation CardRuleCell
+
++ (NSAttributedString*) separatorWithColor:(ILColor*) color width:(CGFloat) width {
+    return [NSAttributedString attributedStringWithAttachment:[CardRuleCell.alloc initWithColor:color width:width]];
+}
+
+- (id) initWithColor:(ILColor*) color width:(CGFloat) width {
+    if ((self = [super initWithData:nil ofType:nil])) {
+        self.separator_color = color;
+        self.separator_width = width;
+    }
+    return self;
+}
+
+// MARK: - NSTextAttachment
+
+/// from where the rule starts to the right of the text
+- (CGRect) attachmentBoundsForTextContainer:(NSTextContainer*) textContainer proposedLineFragment:(CGRect) lineFrag
+                              glyphPosition:(CGPoint) position characterIndex:(NSUInteger) charIndex {
+    CGFloat width = textContainer.size.width - (2.0 * textContainer.lineFragmentPadding) - position.x;
+    return CGRectMake(0, 0, MAX(width, 1), self.separator_width + 2);
+}
+
+/// the line drawn at the size of the bounds, in the color as the view's appearance resolves it
+- (UIImage*) imageForBounds:(CGRect) imageBounds textContainer:(NSTextContainer*) textContainer characterIndex:(NSUInteger) charIndex {
+    UIColor* color = self.separator_color;
+    UIGraphicsImageRendererFormat* format = UIGraphicsImageRendererFormat.preferredFormat;
+    format.opaque = NO;
+    return [[UIGraphicsImageRenderer.alloc initWithSize:imageBounds.size format:format] imageWithActions:^(UIGraphicsImageRendererContext* context) {
+        [color setFill];
+        UIRectFill(CGRectMake(0, (imageBounds.size.height - self.separator_width) / 2, imageBounds.size.width, self.separator_width));
+    }];
+}
+
+@end
+#endif

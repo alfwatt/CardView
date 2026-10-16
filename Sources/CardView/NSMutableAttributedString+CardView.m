@@ -1,8 +1,8 @@
 #import "include/NSMutableAttributedString+CardView.h"
 
+#import "CardRuleCell.h"
 #if IL_APP_KIT
 #import "CardImageCell.h"
-#import "CardRuleCell.h"
 #endif
 
 NSString* const CardTextAttachmentActionName = @"CardTextAttachmentAction";
@@ -133,13 +133,8 @@ NSString* const CardTextAttacmentTargetName = @"CardTextAttacmentTarget";
 - (NSAttributedString*) appendRuleWithColor:(ILColor*) color width:(CGFloat) width style:(NSParagraphStyle*) style {
     NSAttributedString* attrString = nil;
     [self appendNewline:ILFont.defaultFontSize style:style]; // each rule is it's own paragrah
-#if IL_APP_KIT
     attrString = [CardRuleCell separatorWithColor:color width:width];
     [self appendAttributedString:attrString];
-#elif IL_UI_KIT
-    // TODO: NSTextAttachment* attachment = [NSTextAttachment textAttachmentWithImage:nil];
-    [self appendGray:@"———" size:ILFont.defaultFontSize style:style];
-#endif
     [self appendNewline:ILFont.defaultFontSize style:style]; // and clears the next line below it
 
     return attrString;

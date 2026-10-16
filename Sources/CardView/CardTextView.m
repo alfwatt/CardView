@@ -15,6 +15,10 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
 @interface CardTextView ()
 
 @property(nonatomic,retain) NSMutableArray<NSParagraphStyle*>* styleStackStorage;
+/// the column widths of each paragraph style made from them, so they're laid out again when the card is resized
+@property(nonatomic,retain) NSMapTable<NSParagraphStyle*, NSArray<NSNumber*>*>* columnStyles;
+/// the width of the text the columns were laid out in
+@property(nonatomic,assign) CGFloat columnsWidth;
 
 @end
 
@@ -74,8 +78,12 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
 
 - (void) initView {
     self.styleStackStorage = NSMutableArray.new;
+    self.columnStyles = [NSMapTable mapTableWithKeyOptions:NSPointerFunctionsStrongMemory | NSPointerFunctionsObjectPointerPersonality
+                                              valueOptions:NSPointerFunctionsStrongMemory];
 #if TARGET_OS_TV
     self.fontSize = 24;
+    self.textContainerInset = UIEdgeInsetsMake(60, 90, 60, 90); // inside the TV's title safe area, the same on both sides
+    self.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
 #else
     self.fontSize = ILFont.systemFontSize;
 #endif
@@ -123,6 +131,61 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
 
 - (void) clearCard {
     [self.textStorage setAttributedString:[NSAttributedString.alloc initWithString:@""]];
+    for (NSParagraphStyle* style in self.columnStyles.keyEnumerator.allObjects) { // the styles on the stack are kept
+        if (![self.styleStackStorage containsObject:style]) {
+            [self.columnStyles removeObjectForKey:style];
+        }
+    }
+}
+
+// MARK: - Resizing
+
+#if IL_APP_KIT
+- (void) setFrameSize:(NSSize) newSize {
+    [super setFrameSize:newSize];
+    [self layoutColumns];
+}
+#elif IL_UI_KIT
+- (void) layoutSubviews {
+    [super layoutSubviews];
+    [self layoutColumns];
+}
+#endif
+
+/// the columns are fractions of the card's width, lay them out again when it changes
+- (void) layoutColumns {
+    CGFloat width = self.textWidth;
+    if (width <= 0 || self.columnsWidth <= 0 || fabs(width - self.columnsWidth) < 0.5) {
+        return;
+    }
+    NSMutableArray<NSArray*>* changes = NSMutableArray.new;
+    [self.textStorage enumerateAttribute:NSParagraphStyleAttributeName inRange:NSMakeRange(0, self.textStorage.length) options:0
+                              usingBlock:^(id style, NSRange range, BOOL* stop) {
+        NSArray<NSNumber*>* columns = style ? [self.columnStyles objectForKey:style] : nil;
+        if (columns) {
+            [changes addObject:@[[NSValue valueWithRange:range], columns]];
+        }
+    }];
+    NSMutableDictionary<NSArray*, NSParagraphStyle*>* styles = NSMutableDictionary.new; // one new style for each set of columns
+    NSParagraphStyle* (^styleFor)(NSArray<NSNumber*>*) = ^(NSArray<NSNumber*>* columns) {
+        NSParagraphStyle* style = styles[columns];
+        if (!style) {
+            style = styles[columns] = [self paragraphStyleForColumns:columns];
+        }
+        return style;
+    };
+    [self.textStorage beginEditing];
+    for (NSArray* change in changes) {
+        [self.textStorage addAttribute:NSParagraphStyleAttributeName value:styleFor(change[1]) range:[change[0] rangeValue]];
+    }
+    [self.textStorage endEditing];
+    for (NSUInteger index = 0; index < self.styleStackStorage.count; index++) { // and the styles of what's appended next
+        NSArray<NSNumber*>* columns = [self.columnStyles objectForKey:self.styleStackStorage[index]];
+        if (columns) {
+            self.styleStackStorage[index] = styleFor(columns);
+        }
+    }
+    self.columnsWidth = width;
 }
 
 // MARK: - IBActions
@@ -200,6 +263,15 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
     [self pushColumns:columnWidths];
 }
 
+/// the width of the text, inside the text container's insets and padding, the columns are fractions of it
+- (CGFloat) textWidth {
+#if IL_APP_KIT
+    return self.frame.size.width - (self.textContainerInset.width * 2) - (self.textContainer.lineFragmentPadding * 2);
+#else
+    return self.frame.size.width - self.textContainerInset.left - self.textContainerInset.right - (self.textContainer.lineFragmentPadding * 2);
+#endif
+}
+
 - (NSParagraphStyle*) paragraphStyleForColumns:(NSArray<NSNumber*>*)columnWidths {
     NSMutableParagraphStyle* style = NSMutableParagraphStyle.new;
     NSMutableArray* stops = NSMutableArray.new;
@@ -218,8 +290,8 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
         }
 #endif
 
-        if ((stopValue > -1.0) && (stopValue < 1.0)) { // it's a fraction of the width of the frame
-            stopValue = (self.frame.size.width * fabs(stopValue)); // be positive
+        if ((stopValue > -1.0) && (stopValue < 1.0)) { // it's a fraction of the width the text is laid out in
+            stopValue = (self.textWidth * fabs(stopValue)); // be positive
         }
         else {
             stopValue = fabs(stopValue); // be positive
@@ -237,6 +309,8 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
     style.firstLineHeadIndent = 0;
     style.headIndent = columnEdge;
     style.tabStops = stops;
+    [self.columnStyles setObject:columnWidths.copy forKey:style];
+    self.columnsWidth = self.textWidth;
     return style;
 }
 
@@ -396,5 +470,33 @@ didCompleteLayoutForTextContainer:(NSTextContainer *) textContainer
 didChangeGeometryFromSize:(CGSize) oldSize {
 
 }
+
+// MARK: - Presenting
+
+#if TARGET_OS_TV
+- (void) onDismissSwipe:(UISwipeGestureRecognizer*) swipe {
+    UIViewController* controller = (UIViewController*)self.nextResponder;
+    if ([controller isKindOfClass:UIViewController.class]) {
+        [controller dismissViewControllerAnimated:YES completion:nil];
+    }
+}
+
+- (void) presentFullScreenFromView:(UIView*) view {
+    UIViewController* controller = UIViewController.new;
+    self.backgroundColor = UIColor.clearColor;
+    controller.view = self;
+    controller.modalPresentationStyle = UIModalPresentationBlurOverFullScreen;
+    for (NSNumber* direction in @[@(UISwipeGestureRecognizerDirectionLeft), @(UISwipeGestureRecognizerDirectionRight)]) { // back and forward return too
+        UISwipeGestureRecognizer* swipe = [UISwipeGestureRecognizer.alloc initWithTarget:self action:@selector(onDismissSwipe:)];
+        swipe.direction = direction.unsignedIntegerValue;
+        [self addGestureRecognizer:swipe];
+    }
+    UIViewController* presenter = view.window.rootViewController;
+    while (presenter.presentedViewController) {
+        presenter = presenter.presentedViewController;
+    }
+    [presenter presentViewController:controller animated:YES completion:nil];
+}
+#endif
 
 @end
