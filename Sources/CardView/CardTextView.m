@@ -489,6 +489,11 @@ didChangeGeometryFromSize:(CGSize) oldSize {
 // MARK: - Presenting
 
 #if TARGET_OS_TV
+/// a card takes the focus, so the remote's touch surface scrolls it
+- (BOOL) canBecomeFocused {
+    return YES;
+}
+
 - (void) onDismissSwipe:(UISwipeGestureRecognizer*) swipe {
     UIViewController* controller = (UIViewController*)self.nextResponder;
     if ([controller isKindOfClass:UIViewController.class]) {
@@ -501,6 +506,10 @@ didChangeGeometryFromSize:(CGSize) oldSize {
     self.backgroundColor = UIColor.clearColor;
     controller.view = self;
     controller.modalPresentationStyle = UIModalPresentationBlurOverFullScreen;
+    self.userInteractionEnabled = YES; // scrolled with the remote's touch surface
+    self.scrollEnabled = YES;
+    self.panGestureRecognizer.allowedTouchTypes = @[@(UITouchTypeIndirect)];
+    self.showsVerticalScrollIndicator = YES;
     for (NSNumber* direction in @[@(UISwipeGestureRecognizerDirectionLeft), @(UISwipeGestureRecognizerDirectionRight)]) { // back and forward return too
         UISwipeGestureRecognizer* swipe = [UISwipeGestureRecognizer.alloc initWithTarget:self action:@selector(onDismissSwipe:)];
         swipe.direction = direction.unsignedIntegerValue;
