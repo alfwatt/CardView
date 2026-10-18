@@ -339,6 +339,14 @@ static CGFloat const CardTextViewMargin = 16;
     return [self appendStyled:CardCenteredStyle string:string];
 }
 
+- (NSAttributedString*) appendCenteredHeader:(NSString*) string {
+    NSMutableDictionary* attributes = [[NSMutableAttributedString textStyle:CardCenteredStyle fontSize:self.fontSize graphStyle:self.topStyle] mutableCopy];
+    attributes[NSFontAttributeName] = [ILFont boldSystemFontOfSize:(self.fontSize * 1.25)]; // the header style's font
+    NSAttributedString* header = [NSAttributedString.alloc initWithString:string attributes:attributes];
+    [self.textStorage appendAttributedString:header];
+    return header;
+}
+
 - (NSAttributedString*) appendLabel:(NSString*) string {
     return [self appendStyled:CardLabelStyle string:string];
 }

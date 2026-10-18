@@ -82,6 +82,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSAttributedString*) appendHeader:(NSString*) string;
 - (NSAttributedString*) appendSubhead:(NSString*) string;
 - (NSAttributedString*) appendCentered:(NSString*) string;
+/// a headline centered on the card, e.g. the name of the thing it's about, below its icon
+- (NSAttributedString*) appendCenteredHeader:(NSString*) string;
 - (NSAttributedString*) appendLabel:(NSString*) string;
 - (NSAttributedString*) appendGray:(NSString*) string;
 - (NSAttributedString*) appendMonospace:(NSString*) string;
