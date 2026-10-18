@@ -114,7 +114,12 @@ NSString* const CardTextAttacmentTargetName = @"CardTextAttacmentTarget";
 
 - (NSAttributedString*) appendRule:(NSParagraphStyle*) style {
     assert(style);
-    NSAttributedString* rule = [self appendRuleWithColor:ILColor.disabledControlTextColor width:1 style:style];
+#if IL_UI_KIT
+    ILColor* color = UIColor.labelColor; // the text color, light in dark mode
+#else
+    ILColor* color = ILColor.disabledControlTextColor;
+#endif
+    NSAttributedString* rule = [self appendRuleWithColor:color width:1 style:style];
 
     return rule;
 }

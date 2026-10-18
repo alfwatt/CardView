@@ -86,7 +86,8 @@
 
 /// the line drawn at the size of the bounds, in the color as the view's appearance resolves it
 - (UIImage*) imageForBounds:(CGRect) imageBounds textContainer:(NSTextContainer*) textContainer characterIndex:(NSUInteger) charIndex {
-    UIColor* color = self.separator_color;
+    UITraitCollection* traits = UITraitCollection.currentTraitCollection; // the text view's, as it draws
+    UIColor* color = [self.separator_color resolvedColorWithTraitCollection:traits];
     UIGraphicsImageRendererFormat* format = UIGraphicsImageRendererFormat.preferredFormat;
     format.opaque = NO;
     return [[UIGraphicsImageRenderer.alloc initWithSize:imageBounds.size format:format] imageWithActions:^(UIGraphicsImageRendererContext* context) {
