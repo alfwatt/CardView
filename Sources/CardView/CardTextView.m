@@ -74,6 +74,9 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
     return formatted;
 }
 
+/// the space around the text of every card, on the Mac and iOS, a TV's cards stay inside its title safe area
+static CGFloat const CardTextViewMargin = 16;
+
 // MARK: - ILViewLifecycle
 
 - (void) initView {
@@ -84,8 +87,12 @@ static NSString* const CardTextPromiseUUIDAttributeName = @"CardTextPromiseUUIDA
     self.fontSize = 24;
     self.textContainerInset = UIEdgeInsetsMake(60, 90, 60, 90); // inside the TV's title safe area, the same on both sides
     self.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+#elif IL_UI_KIT
+    self.fontSize = ILFont.systemFontSize;
+    self.textContainerInset = UIEdgeInsetsMake(CardTextViewMargin, CardTextViewMargin, CardTextViewMargin, CardTextViewMargin); // every card's margins
 #else
     self.fontSize = ILFont.systemFontSize;
+    self.textContainerInset = NSMakeSize(CardTextViewMargin, CardTextViewMargin); // every card's margins
 #endif
 
     /* TODO: manually create a layout manager which doesn't break layout so we can enable tap/click 

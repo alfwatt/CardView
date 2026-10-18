@@ -115,7 +115,7 @@ NSString* const CardTextAttacmentTargetName = @"CardTextAttacmentTarget";
 - (NSAttributedString*) appendRule:(NSParagraphStyle*) style {
     assert(style);
 #if IL_UI_KIT
-    ILColor* color = UIColor.labelColor; // the text color, light in dark mode
+    ILColor* color = UIColor.tertiaryLabelColor; // a pale text color, light in dark mode
 #else
     ILColor* color = ILColor.disabledControlTextColor;
 #endif
