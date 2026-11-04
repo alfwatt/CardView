@@ -17,7 +17,7 @@ func localOrRemote(_ name: String, url: String, from version: Version) -> Packag
 let package = Package(
     name: "CardView",
     defaultLocalization: "en",
-    platforms: [.macOS(.v12), .iOS(.v14), .tvOS(.v14)],
+    platforms: [.macOS(.v12), .iOS(.v14), .tvOS(.v14), .visionOS(.v26)],
     products: [
         .library(name: "CardView", type: .dynamic, targets: ["CardView"])
     ],
