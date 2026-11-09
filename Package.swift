@@ -24,7 +24,7 @@ let package = Package(
     ],
     dependencies: [
         localOrRemote("KitBridge", url: "https://github.com/alfwatt/KitBridge.git", from: "2.2.0"),
-        localOrRemote("ILFoundation", url: "https://github.com/alfwatt/ILFoundation.git", from: "1.2.0")
+        localOrRemote("ILFoundation", url: "https://github.com/alfwatt/ILFoundation.git", from: "2.0.0")
     ],
     targets: [
         .target(

@@ -162,7 +162,7 @@ open class CardDataFormatter: CardFormatter, @unchecked Sendable {
                 dump.append(NSAttributedString(string: "\n", attributes: attributes))
             }
             let line = data[index ..< min(index + hexLineBytes, data.endIndex)]
-            let hex = NSString.hexString(with: Data(line)).padding(toLength: hexLineBytes * 2, withPad: " ", startingAt: 0)
+            let hex = Data(line).hexString.padding(toLength: hexLineBytes * 2, withPad: " ", startingAt: 0)
             dump.append(NSAttributedString(string: "0x", attributes: units))
             dump.append(NSAttributedString(string: hex, attributes: monospace))
             let decoded = String(data: Data(line), encoding: .utf8).map(Self.replaceSpecialCharactersWithSymbols)
@@ -182,7 +182,7 @@ open class CardDataFormatter: CardFormatter, @unchecked Sendable {
 open class CardStringDataFormatter: CardFormatter, @unchecked Sendable {
     open override func string(for obj: Any?) -> String? {
         guard let data = obj as? Data else { return obj.map { String(describing: $0) } }
-        return String(data: data, encoding: String.Encoding(rawValue: NSString.utfEncoding(of: data)))
+        return String(utfData: data)
     }
 }
 
