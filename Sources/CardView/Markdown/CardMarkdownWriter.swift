@@ -1,9 +1,5 @@
 import Foundation
-#if canImport(KitBridgeSwift)
-import KitBridgeSwift
-#else
 import KitBridge
-#endif
 #if canImport(AppKit)
 import AppKit
 #else

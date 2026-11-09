@@ -23,7 +23,7 @@ let package = Package(
         .library(name: "CardView", type: .dynamic, targets: ["CardView"])
     ],
     dependencies: [
-        localOrRemote("KitBridge", url: "https://github.com/alfwatt/KitBridge.git", from: "2.2.0"),
+        localOrRemote("KitBridge", url: "https://github.com/alfwatt/KitBridge.git", from: "3.0.0"),
         localOrRemote("ILFoundation", url: "https://github.com/alfwatt/ILFoundation.git", from: "2.0.0")
     ],
     targets: [
