@@ -123,4 +123,6 @@ public extension NSAttributedString.Key {
     static let cardListMarker = NSAttributedString.Key("CardListMarker")
     /// the `UUID` string of the promise the text fulfills
     static let cardPromise = NSAttributedString.Key("CardPromise")
+    /// the identifier of the action the text performs when it's clicked or tapped
+    static let cardAction = NSAttributedString.Key("CardAction")
 }

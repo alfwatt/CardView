@@ -62,7 +62,7 @@ open class CardButtonAttachment: CardAttachment, @unchecked Sendable {
         button.sizeToFit()
         return button
 #else
-        var configuration = UIButton.Configuration.bordered()
+        var configuration: UIButton.Configuration = title.isEmpty && buttonImage != nil ? .plain() : .bordered() // just the image, without a bezel
         configuration.title = title.isEmpty ? nil : title
         configuration.image = buttonImage
         configuration.imagePadding = 4

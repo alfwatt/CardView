@@ -83,17 +83,22 @@ open class CardTextView: ILTextView {
 
     public required init?(coder: NSCoder) {
         super.init(coder: coder)
-        initView()
+        initView(decoded: true)
     }
 
-    private func initView() {
+    /// set up the card, a card
+    /// @param decoded from a nib or storyboard keeps the background it was given there
+    private func initView(decoded: Bool = false) {
 #if os(tvOS)
         textContainerInset = UIEdgeInsets(top: 60, left: 90, bottom: 60, right: 90) // inside the TV's title safe area, the same on both sides
         contentInsetAdjustmentBehavior = .never
 #elseif canImport(UIKit)
         textContainerInset = UIEdgeInsets(top: Self.margin, left: Self.margin, bottom: Self.margin, right: Self.margin)
         isEditable = false
-        backgroundColor = .clear
+        if !decoded {
+            backgroundColor = .clear
+        }
+        addGestureRecognizer(actionTap)
 #else
         textContainerInset = NSSize(width: Self.margin, height: Self.margin)
         isEditable = false
@@ -115,6 +120,7 @@ open class CardTextView: ILTextView {
     /// remove all content from the card, the styles on the stack are kept
     public func clearCard() {
         storage.setAttributedString(NSAttributedString())
+        actions.removeAll()
         for style in columnStyles.keyEnumerator().allObjects as! [NSParagraphStyle] where !styleStack.contains(where: { $0 === style }) {
             columnStyles.removeObject(forKey: style)
         }
@@ -314,6 +320,41 @@ open class CardTextView: ILTextView {
         storage.appendTab(fontSize: fontSize, paragraph: topStyle)
     }
 
+    /// append the
+    /// @param string provided as it is, in its own attributes
+    @discardableResult
+    @objc(appendAttributedString:)
+    public func appendAttributed(_ string: NSAttributedString) -> NSAttributedString {
+        storage.append(string)
+        return string
+    }
+
+    /// append a section's
+    /// @param title as a subheader, on a new line, with a rule under it
+    @discardableResult
+    @objc(appendSection:)
+    public func appendSection(_ title: String) -> NSAttributedString {
+        let start = storage.length
+        appendNewline()
+        append(title, style: .subheader)
+        appendRule()
+        return storage.attributedSubstring(from: NSRange(location: start, length: storage.length - start))
+    }
+
+    /// @returns the attributes of text in the
+    /// @param style provided, at the
+    /// @param size provided or the card's font size, in the
+    /// @param paragraph style provided or the card's top style
+    public func attributes(_ style: CardStyle, size: CGFloat? = nil, paragraph: NSParagraphStyle? = nil) -> [NSAttributedString.Key: Any] {
+        style.attributes(fontSize: size ?? fontSize, paragraph: paragraph ?? topStyle)
+    }
+
+    /// the width of the card for scaling its images, a new card's frame can be empty before it's laid out
+    /// and an image scaled to no width can't be drawn, so it's 320 points until the card has a width
+    public var safeContentWidth: CGFloat {
+        frame.width > 0 ? frame.width : 320
+    }
+
     // MARK: - Rules
 
     /// append a rule across the card, in the
@@ -371,6 +412,79 @@ open class CardTextView: ILTextView {
     public func appendView(_ view: some View, size: CGSize? = nil) -> NSAttributedString {
         storage.appendView(view, size: size, fontSize: fontSize, paragraph: topStyle)
     }
+
+    // MARK: - Actions
+
+    /// the actions of the card's text, by the identifiers in their `.cardAction` attributes
+    private var actions: [String: @MainActor () -> Void] = [:]
+
+    /// append text which performs an
+    /// @param action when it's clicked or tapped: a small
+    /// @param image if there is one, then the text appended by the
+    /// @param content closure provided
+    /// @returns the text appended
+    @discardableResult
+    public func appendAction(image: ILImage? = nil, _ content: () -> Void, action: @escaping @MainActor () -> Void) -> NSAttributedString {
+        let start = storage.length
+        if let image {
+            storage.appendAttachment(CardImageAttachment(image: image, maxWidth: fontSize), fontSize: fontSize, paragraph: topStyle)
+            append(" ")
+        }
+        content()
+        let range = NSRange(location: start, length: storage.length - start)
+        let identifier = UUID().uuidString
+        actions[identifier] = action
+        storage.addAttribute(.cardAction, value: identifier, range: range)
+#if canImport(AppKit)
+        storage.addAttribute(.cursor, value: NSCursor.pointingHand, range: range)
+#endif
+        return storage.attributedSubstring(from: range)
+    }
+
+    /// @returns the action of the text at the
+    /// @param index provided, or of the character before it, so the end of an action's line performs it too
+    func action(at index: Int) -> (@MainActor () -> Void)? {
+        let storage = storage
+        for location in [index, index - 1] where location >= 0 && location < storage.length {
+            if let identifier = storage.attribute(.cardAction, at: location, effectiveRange: nil) as? String {
+                return actions[identifier]
+            }
+        }
+        return nil
+    }
+
+#if canImport(AppKit)
+    open override func mouseDown(with event: NSEvent) {
+        let index = characterIndexForInsertion(at: convert(event.locationInWindow, from: nil))
+        if let action = action(at: index) {
+            action()
+        }
+        else {
+            super.mouseDown(with: event)
+        }
+    }
+#else
+    /// the tap which performs the actions of the card's text
+    private lazy var actionTap = UITapGestureRecognizer(target: self, action: #selector(onActionTap(_:)))
+
+    /// the index of the character nearest the
+    /// @param point provided
+    private func characterIndex(at point: CGPoint) -> Int? {
+        guard let position = closestPosition(to: point) else { return nil }
+        return offset(from: beginningOfDocument, to: position)
+    }
+
+    open override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer === actionTap else {
+            return super.gestureRecognizerShouldBegin(gestureRecognizer)
+        }
+        return characterIndex(at: gestureRecognizer.location(in: self)).flatMap(action(at:)) != nil
+    }
+
+    @objc private func onActionTap(_ tap: UITapGestureRecognizer) {
+        characterIndex(at: tap.location(in: self)).flatMap(action(at:))?()
+    }
+#endif
 
     // MARK: - Formatter Registry
 

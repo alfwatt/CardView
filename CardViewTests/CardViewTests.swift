@@ -161,6 +161,63 @@ func symbol(_ name: String) -> ILImage {
         card.fulfill(promise, formatted: Data(count: 2000))
         #expect(card.storage.string == "2.0\u{202F}kB")
     }
+
+    // MARK: - Sections
+
+    @Test func section() {
+        let card = makeCard()
+        card.append("Before")
+        let section = card.appendSection("Title")
+        #expect(card.storage.string.hasPrefix("Before\nTitle\n"))
+        #expect(card.storage.string.hasSuffix(section.string))
+        var hasRule = false
+        card.storage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: card.storage.length)) { value, _, _ in
+            hasRule = hasRule || value is CardRuleAttachment
+        }
+        #expect(hasRule)
+    }
+
+    @Test func appendAttributed() {
+        let card = makeCard()
+        let bold = NSAttributedString(string: "bold", attributes: [.font: ILFont.boldSystemFont(ofSize: 20)])
+        card.appendAttributed(bold)
+        #expect(card.storage.string == "bold")
+        #expect((card.storage.attribute(.font, at: 0, effectiveRange: nil) as? ILFont)?.pointSize == 20)
+    }
+
+    @Test func attributes() {
+        let card = makeCard()
+        #expect((card.attributes(.text)[.font] as? ILFont)?.pointSize == 12)
+        #expect((card.attributes(.text, size: 20)[.font] as? ILFont)?.pointSize == 20)
+        let centered = NSMutableParagraphStyle()
+        centered.alignment = .center
+        #expect((card.attributes(.text, paragraph: centered)[.paragraphStyle] as? NSParagraphStyle)?.alignment == .center)
+    }
+
+    @Test func action() {
+        let card = makeCard()
+        card.append("Before ")
+        var performed = 0
+        let line = card.appendAction(image: symbol("doc.on.doc"), {
+            card.append("Action", style: .subheader)
+        }, action: { performed += 1 })
+        card.appendNewline()
+        card.append("After")
+        #expect(line.string.hasSuffix(" Action"))
+        #expect(card.action(at: 0) == nil)
+        let start = (card.storage.string as NSString).range(of: "Action").location
+        card.action(at: start)?()
+        card.action(at: start + 6)?() // the end of the line
+        #expect(performed == 2)
+        #expect(card.action(at: card.storage.length - 1) == nil)
+        card.clearCard()
+        #expect(card.action(at: 0) == nil)
+    }
+
+    @Test func safeContentWidth() {
+        #expect(makeCard().safeContentWidth == 432)
+        #expect(CardTextView(frame: .zero, textContainer: nil).safeContentWidth == 320)
+    }
 }
 
 // MARK: -
