@@ -16,8 +16,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "754780BA2C56E84100C7C25C"
-               BuildableName = "Deck (macOS).app"
-               BlueprintName = "Deck (macOS)"
+               BuildableName = "Deck.app"
+               BlueprintName = "Deck"
                ReferencedContainer = "container:CardView.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,8 +45,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "754780BA2C56E84100C7C25C"
-            BuildableName = "Deck (macOS).app"
-            BlueprintName = "Deck (macOS)"
+            BuildableName = "Deck.app"
+            BlueprintName = "Deck"
             ReferencedContainer = "container:CardView.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -62,8 +62,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "754780BA2C56E84100C7C25C"
-            BuildableName = "Deck (macOS).app"
-            BlueprintName = "Deck (macOS)"
+            BuildableName = "Deck.app"
+            BlueprintName = "Deck"
             ReferencedContainer = "container:CardView.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

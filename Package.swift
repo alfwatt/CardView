@@ -1,4 +1,4 @@
-// swift-tools-version:6.1
+// swift-tools-version:6.2
 
 import Foundation
 import PackageDescription
@@ -17,7 +17,8 @@ func localOrRemote(_ name: String, url: String, from version: Version) -> Packag
 let package = Package(
     name: "CardView",
     defaultLocalization: "en",
-    platforms: [.macOS(.v12), .iOS(.v14), .tvOS(.v14), .visionOS(.v26)],
+    // Xcode's recommended deployment targets, TextKit 2 is the text views' default, the attachments' views need it
+    platforms: [.macOS(.v14), .iOS(.v17), .tvOS(.v17), .visionOS(.v26)],
     products: [
         .library(name: "CardView", type: .dynamic, targets: ["CardView"])
     ],
@@ -32,15 +33,12 @@ let package = Package(
                 .product(name: "KitBridge", package: "KitBridge"),
                 .product(name: "ILFoundation", package: "ILFoundation")
             ],
-            publicHeadersPath: "include"
+            exclude: ["Info.plist"]
         ),
-        .target(
-            name: "Deck",
+        .testTarget(
+            name: "CardViewTests",
             dependencies: ["CardView"],
-            exclude: ["Deck.entitlements"],
-            resources: [
-                .process("Assets.xcassets")
-            ]
+            path: "CardViewTests"
         )
     ]
 )
