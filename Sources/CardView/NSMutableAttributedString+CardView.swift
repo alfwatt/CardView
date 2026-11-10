@@ -64,6 +64,26 @@ public extension NSMutableAttributedString {
         return appendAttachment(CardRuleAttachment(color: color, width: width), fontSize: fontSize, paragraph: paragraph)
     }
 
+    /// append a section's
+    /// @param title as a subheader, on a new line, after a small
+    /// @param image if there is one, both with the
+    /// @param attributes provided, e.g. a card's `actionAttributes`, with a rule under it
+    @discardableResult
+    func appendSection(_ title: String, image: ILImage? = nil, attributes: [NSAttributedString.Key: Any] = [:],
+                       fontSize: CGFloat, paragraph: NSParagraphStyle) -> NSAttributedString {
+        let start = length
+        appendNewline(fontSize: fontSize, paragraph: paragraph)
+        let header = length
+        if let image {
+            appendAttachment(CardImageAttachment(image: image, maxWidth: fontSize), fontSize: fontSize, paragraph: paragraph)
+            append(" ", fontSize: fontSize, paragraph: paragraph)
+        }
+        append(title, style: .subheader, fontSize: fontSize, paragraph: paragraph)
+        addAttributes(attributes, range: NSRange(location: header, length: length - header))
+        appendRule(fontSize: fontSize, paragraph: paragraph)
+        return attributedSubstring(from: NSRange(location: start, length: length - start))
+    }
+
     // MARK: - Attachments
 
     /// append an
@@ -72,7 +92,10 @@ public extension NSMutableAttributedString {
     @discardableResult
     @objc(appendImage:source:fontSize:paragraph:)
     func appendImage(_ image: ILImage, source: URL? = nil, fontSize: CGFloat, paragraph: NSParagraphStyle) -> NSAttributedString {
-        appendAttachment(CardImageAttachment(image: image, source: source), style: .centered, fontSize: fontSize, paragraph: paragraph)
+        if !isImageParagraph { // a paragraph's first character sets its alignment, so start a new one to center the image
+            appendNewline(fontSize: fontSize, paragraph: paragraph)
+        }
+        return appendAttachment(CardImageAttachment(image: image, source: source), style: .centered, fontSize: fontSize, paragraph: paragraph)
     }
 
     /// append a button with the
@@ -123,6 +146,26 @@ public extension NSMutableAttributedString {
         let attached = NSAttributedString(string: String(Character(.attachmentCharacter)), attributes: attributes)
         append(attached)
         return attached
+    }
+}
+
+extension NSAttributedString {
+    /// true if the last paragraph is empty or has only images and spaces in it, e.g. a row of icons, so an image appended to it is centered
+    var isImageParagraph: Bool {
+        let text = string as NSString
+        let newline = text.rangeOfCharacter(from: .newlines, options: .backwards)
+        var index = newline.location == NSNotFound ? 0 : NSMaxRange(newline)
+        while index < length {
+            let character = text.character(at: index)
+            if Int(character) == NSTextAttachment.character {
+                guard attribute(.attachment, at: index, effectiveRange: nil) is CardImageAttachment else { return false }
+            }
+            else if !(Character(Unicode.Scalar(character) ?? " ").isWhitespace) {
+                return false
+            }
+            index += 1
+        }
+        return true
     }
 }
 

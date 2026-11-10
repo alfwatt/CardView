@@ -445,13 +445,20 @@ open class CardTextView: ILTextView {
         }
         content()
         let range = NSRange(location: start, length: storage.length - start)
+        storage.addAttributes(actionAttributes(action), range: range)
+        return storage.attributedSubstring(from: range)
+    }
+
+    /// @returns the attributes of text which performs an
+    /// @param action when it's clicked or tapped, for text built apart from the card, e.g. to fulfill a promise
+    public func actionAttributes(_ action: @escaping @MainActor () -> Void) -> [NSAttributedString.Key: Any] {
         let identifier = UUID().uuidString
         actions[identifier] = action
-        storage.addAttribute(.cardAction, value: identifier, range: range)
+        var attributes: [NSAttributedString.Key: Any] = [.cardAction: identifier]
 #if canImport(AppKit)
-        storage.addAttribute(.cursor, value: NSCursor.pointingHand, range: range)
+        attributes[.cursor] = NSCursor.pointingHand
 #endif
-        return storage.attributedSubstring(from: range)
+        return attributes
     }
 
     /// @returns the action of the text at the

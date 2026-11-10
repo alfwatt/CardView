@@ -385,6 +385,27 @@ struct FormatterTests {
         #expect(card.markdown == "# Header\n\n**Label** and `code`\n\n---\n\nLast")
     }
 
+    @Test func imagesAfterARuleOrTextAreCentered() {
+        let card = makeCard()
+        card.appendSection("Image")
+        card.appendImage(symbol("photo"))
+        card.append(" ")
+        card.appendImage(symbol("doc")) // a row of images stays on one line
+        card.append("Text")
+        card.appendImage(symbol("eye"))
+        let text = card.storage.string as NSString
+        #expect(text.components(separatedBy: "\n").count == 5) // the section's newlines, then one before each paragraph of images
+        var index = 0
+        while index < card.storage.length {
+            if card.storage.attribute(.attachment, at: index, effectiveRange: nil) is CardImageAttachment {
+                let paragraph = text.paragraphRange(for: NSRange(location: index, length: 0))
+                let style = card.storage.attribute(.paragraphStyle, at: paragraph.location, effectiveRange: nil) as? NSParagraphStyle
+                #expect(style?.alignment == .center)
+            }
+            index += 1
+        }
+    }
+
     @Test func cardMarkdown() {
         let card = makeCard()
         card.markdown = "# Title\n\n- item"
