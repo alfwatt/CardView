@@ -334,8 +334,21 @@ open class CardTextView: ILTextView {
     @discardableResult
     @objc(appendSection:)
     public func appendSection(_ title: String) -> NSAttributedString {
+        appendSection(title, image: nil)
+    }
+
+    /// append a section's
+    /// @param title as a subheader, on a new line, after a small
+    /// @param image if there is one, as an action has, with a rule under it
+    @discardableResult
+    @objc(appendSection:image:)
+    public func appendSection(_ title: String, image: ILImage?) -> NSAttributedString {
         let start = storage.length
         appendNewline()
+        if let image {
+            storage.appendAttachment(CardImageAttachment(image: image, maxWidth: fontSize), fontSize: fontSize, paragraph: topStyle)
+            append(" ")
+        }
         append(title, style: .subheader)
         appendRule()
         return storage.attributedSubstring(from: NSRange(location: start, length: storage.length - start))

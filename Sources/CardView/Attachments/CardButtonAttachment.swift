@@ -58,11 +58,21 @@ open class CardButtonAttachment: CardAttachment, @unchecked Sendable {
         if let buttonImage {
             button.image = buttonImage
             button.imagePosition = title.isEmpty ? .imageOnly : .imageLeading
+            if title.isEmpty { // just the image at its own size, without a bezel, as on iOS
+                button.isBordered = false
+                button.imageScaling = .scaleNone
+            }
         }
         button.sizeToFit()
         return button
 #else
-        var configuration: UIButton.Configuration = title.isEmpty && buttonImage != nil ? .plain() : .bordered() // just the image, without a bezel
+        if title.isEmpty, let buttonImage { // just the image as it is, without a bezel, or the configuration's tint and symbol weight
+            let button = UIButton(type: .custom, primaryAction: UIAction { [weak self] _ in self?.perform() })
+            button.setImage(buttonImage, for: .normal)
+            button.sizeToFit()
+            return button
+        }
+        var configuration: UIButton.Configuration = .bordered()
         configuration.title = title.isEmpty ? nil : title
         configuration.image = buttonImage
         configuration.imagePadding = 4
