@@ -340,6 +340,16 @@ open class CardUnitsFormatter: NumberFormatter, @unchecked Sendable {
         (number, units)
     }
 
+    /// @returns the
+    /// @param value provided as a string, without a fraction if it's an integer, e.g. "72 dpi" rather than "72.0 dpi"
+    open func valueString(_ value: NSNumber) -> String {
+        guard !CFNumberIsFloatType(value) else { return super.string(for: value) ?? "" }
+        let digits = minimumFractionDigits
+        minimumFractionDigits = 0
+        defer { minimumFractionDigits = digits }
+        return super.string(for: value) ?? ""
+    }
+
     open override func string(for obj: Any?) -> String? {
         guard let number = obj as? NSNumber else { return nil }
         let (value, units) = scaled(number)
@@ -347,7 +357,7 @@ open class CardUnitsFormatter: NumberFormatter, @unchecked Sendable {
         if let prefix {
             formatted += prefix + Self.noBreakSpace
         }
-        formatted += super.string(for: value) ?? ""
+        formatted += valueString(value)
         if let units {
             formatted += Self.noBreakSpace + units
         }
@@ -364,7 +374,7 @@ open class CardUnitsFormatter: NumberFormatter, @unchecked Sendable {
             formatted.append(NSAttributedString(string: prefix, attributes: unitsAttributes))
             formatted.append(NSAttributedString(string: Self.noBreakSpace, attributes: attributes))
         }
-        formatted.append(NSAttributedString(string: super.string(for: value) ?? "", attributes: attributes))
+        formatted.append(NSAttributedString(string: valueString(value), attributes: attributes))
         if let units {
             formatted.append(NSAttributedString(string: Self.noBreakSpace, attributes: attributes))
             formatted.append(NSAttributedString(string: units, attributes: unitsAttributes))
@@ -450,14 +460,15 @@ open class CardFractionFormatter: CardUnitsFormatter, @unchecked Sendable {
     /// FRACTION SLASH U+2044
     static let fractionSlash = "\u{2044}"
 
-    open override func string(for obj: Any?) -> String? {
-        guard let number = obj as? NSNumber else { return obj.map { String(describing: $0) } }
-        let (numerator, denominator) = Self.fraction(number.doubleValue)
-        return "\(numerator)\(Self.fractionSlash)\(denominator)"
+    /// the value as a fraction, or a whole number if it is one, e.g. "1⁄250" or "2"
+    open override func valueString(_ value: NSNumber) -> String {
+        let (numerator, denominator) = Self.fraction(value.doubleValue)
+        return denominator == 1 ? "\(numerator)" : "\(numerator)\(Self.fractionSlash)\(denominator)"
     }
 
-    open override func attributedString(for obj: Any, withDefaultAttributes attrs: [NSAttributedString.Key: Any]? = nil) -> NSAttributedString? {
-        NSAttributedString(string: string(for: obj) ?? "", attributes: attrs)
+    open override func string(for obj: Any?) -> String? {
+        guard obj is NSNumber else { return obj.map { String(describing: $0) } }
+        return super.string(for: obj)
     }
 }
 

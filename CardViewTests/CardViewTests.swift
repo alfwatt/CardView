@@ -150,7 +150,7 @@ func symbol(_ name: String) -> ILImage {
         CardTextView.register(formatter, for: NSData.self)
         #expect(CardTextView.registeredFormatter(for: NSData.self) === formatter)
         #expect(CardTextView.registeredFormatter(for: NSMutableData.self) === formatter) // a subclass
-        #expect(CardTextView.formatted(Data(count: 420), attributes: [:]).string == "420.0\u{202F}Bytes")
+        #expect(CardTextView.formatted(Data(count: 420), attributes: [:]).string == "420\u{202F}Bytes")
         #expect(CardTextView.formatted(nil, attributes: [:]).string == "-")
     }
 
@@ -226,7 +226,7 @@ struct FormatterTests {
 
     @Test func bytes() {
         let bytes = CardBytesFormatter()
-        #expect(bytes.string(for: 999) == "999.0\u{202F}Bytes")
+        #expect(bytes.string(for: 999) == "999\u{202F}Bytes")
         #expect(bytes.string(for: 1_500) == "1.5\u{202F}kB")
         #expect(bytes.string(for: 2_000_000) == "2.0\u{202F}MB")
         #expect(bytes.string(for: 3_250_000_000_000) == "3.25\u{202F}TB")
@@ -238,7 +238,7 @@ struct FormatterTests {
         units.prefix = "≈"
         #expect(units.string(for: -62.5) == "≈\u{202F}-62.5\u{202F}dBm")
         let attributed = units.attributedString(for: NSNumber(value: 1), withDefaultAttributes: [.font: ILFont.systemFont(ofSize: 12)])
-        #expect(attributed?.string == "≈\u{202F}1.0\u{202F}dBm")
+        #expect(attributed?.string == "≈\u{202F}1\u{202F}dBm")
     }
 
     @Test func fraction() {
