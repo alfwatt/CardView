@@ -34,11 +34,11 @@ open class CardAttachment: NSTextAttachment, @unchecked Sendable {
         CardAttachment.fit(view.cardFittingSize, in: lineWidth)
     }
 
-    /// the attachment's offset from the baseline, small attachments are centered on the text's capitals, larger ones sit on the baseline
+    /// the attachment's offset from the baseline, small attachments are centered on the text's x height, larger ones sit on the baseline
     open func baselineOffset(for size: CGSize, font: ILFont?) -> CGFloat {
         guard let font else { return 0 }
         if size.height <= (font.ascender - font.descender) * 1.5 {
-            return ((font.capHeight - size.height) / 2).rounded()
+            return ((font.xHeight - size.height) / 2).rounded()
         }
         return 0
     }

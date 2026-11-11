@@ -346,7 +346,8 @@ open class CardTextView: ILTextView {
         let start = storage.length
         appendNewline()
         if let image {
-            storage.appendAttachment(CardImageAttachment(image: image, maxWidth: fontSize), fontSize: fontSize, paragraph: topStyle)
+            storage.appendAttachment(CardImageAttachment(image: image, maxWidth: fontSize), style: .subheader, fontSize: fontSize,
+                                     paragraph: topStyle) // centered on the title's x height
             append(" ")
         }
         append(title, style: .subheader)

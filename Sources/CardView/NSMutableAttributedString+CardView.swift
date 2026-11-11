@@ -75,7 +75,7 @@ public extension NSMutableAttributedString {
         appendNewline(fontSize: fontSize, paragraph: paragraph)
         let header = length
         if let image {
-            appendAttachment(CardImageAttachment(image: image, maxWidth: fontSize), fontSize: fontSize, paragraph: paragraph)
+            appendAttachment(CardImageAttachment(image: image, maxWidth: fontSize), style: .subheader, fontSize: fontSize, paragraph: paragraph) // centered on the title's x height
             append(" ", fontSize: fontSize, paragraph: paragraph)
         }
         append(title, style: .subheader, fontSize: fontSize, paragraph: paragraph)
