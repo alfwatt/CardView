@@ -177,6 +177,24 @@ func symbol(_ name: String) -> ILImage {
         #expect(hasRule)
     }
 
+    @Test func aSectionsActionHasItsTextAsRTFAndShowsItWasDone() throws {
+        let card = makeCard()
+        card.append("Before")
+        var copied: Data?
+        let header = card.storage.length + 1
+        card.appendSection("First", image: ILImage(systemName: "doc"), attributes: card.sectionAttributes { copied = $0 })
+        card.appendNewline()
+        card.append("Key\tValue")
+        card.appendNewline()
+        card.appendSection("Second", image: nil, attributes: card.sectionAttributes { _ in })
+        card.append("Not in the first")
+        card.action(at: header)?()
+        let rtf = try #require(copied)
+        let text = try NSAttributedString(data: rtf, options: [.documentType: NSAttributedString.DocumentType.rtf], documentAttributes: nil)
+        #expect(text.string == "First\nKey\tValue")
+        #expect(card.storage.attribute(.backgroundColor, at: header, effectiveRange: nil) != nil) // highlighted for a moment
+    }
+
     @Test func appendAttributed() {
         let card = makeCard()
         let bold = NSAttributedString(string: "bold", attributes: [.font: ILFont.boldSystemFont(ofSize: 20)])

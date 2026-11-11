@@ -354,6 +354,15 @@ open class CardTextView: ILTextView {
         return storage.attributedSubstring(from: NSRange(location: start, length: storage.length - start))
     }
 
+    /// append a section's
+    /// @param title as a subheader, on a new line, after a small
+    /// @param image if there is one, both with the
+    /// @param attributes provided, e.g. the `sectionAttributes` of an action, with a rule under it
+    @discardableResult
+    public func appendSection(_ title: String, image: ILImage?, attributes: [NSAttributedString.Key: Any]) -> NSAttributedString {
+        storage.appendSection(title, image: image, attributes: attributes, fontSize: fontSize, paragraph: topStyle)
+    }
+
     /// @returns the attributes of text in the
     /// @param style provided, at the
     /// @param size provided or the card's font size, in the
@@ -471,6 +480,111 @@ open class CardTextView: ILTextView {
             }
         }
         return nil
+    }
+
+    // MARK: - Sections
+
+    /// the sections showing that their action was done, by their identifiers
+    private var sectionsShowingDone: Set<String> = []
+
+    /// @returns the attributes of a section's header which performs an
+    /// @param action with the section's text as RTF when it's clicked or tapped, e.g. to copy it,
+    /// then shows it was done, for headers built apart from the card with `appendSection(_:image:attributes:fontSize:paragraph:)`
+    public func sectionAttributes(_ action: @escaping @MainActor (_ rtf: Data?) -> Void) -> [NSAttributedString.Key: Any] {
+        let identifier = UUID().uuidString
+        var attributes = actionAttributes { [weak self] in
+            guard let self, let range = sectionRange(identifier) else { return }
+            action(Self.rtf(of: storage.attributedSubstring(from: range)))
+            showDone(section: identifier)
+        }
+        attributes[.cardSection] = identifier
+        return attributes
+    }
+
+    /// @returns the range of the section with the
+    /// @param identifier provided: its header, through the line before the next section's header
+    func sectionRange(_ identifier: String) -> NSRange? {
+        let storage = storage
+        var start: Int?
+        var end = storage.length
+        storage.enumerateAttribute(.cardSection, in: NSRange(location: 0, length: storage.length)) { value, range, stop in
+            guard let value = value as? String else { return }
+            if value == identifier {
+                start = start ?? range.location
+            }
+            else if start != nil {
+                end = (storage.string as NSString).lineRange(for: NSRange(location: range.location, length: 0)).location
+                stop.pointee = true
+            }
+        }
+        guard let start else { return nil }
+        return NSRange(location: start, length: max(end, start) - start)
+    }
+
+    /// @returns the
+    /// @param text provided as RTF, in the colors it has in light mode so it can be read on a page,
+    /// without its attachments, e.g. a section's symbol and rule, and the space or newline after each
+    static func rtf(of text: NSAttributedString) -> Data? {
+        let rich = NSMutableAttributedString(attributedString: text)
+        rich.enumerateAttribute(.attachment, in: NSRange(location: 0, length: rich.length), options: .reverse) { value, range, _ in
+            guard value != nil else { return }
+            var removed = range
+            if NSMaxRange(range) < rich.length, [" ", "\n"].contains((rich.string as NSString).substring(with: NSRange(location: NSMaxRange(range), length: 1))) {
+                removed.length += 1
+            }
+            rich.deleteCharacters(in: removed)
+        }
+        while let last = rich.string.last, last.isWhitespace {
+            rich.deleteCharacters(in: NSRange(location: rich.length - 1, length: 1))
+        }
+        rich.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: rich.length)) { value, range, _ in
+            guard let color = value as? ILColor else { return }
+#if canImport(AppKit)
+            var light = color
+            NSAppearance(named: .aqua)?.performAsCurrentDrawingAppearance { light = color.usingColorSpace(.sRGB) ?? color }
+#else
+            let light = color.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
+#endif
+            rich.addAttribute(.foregroundColor, value: light, range: range)
+        }
+        return try? rich.data(from: NSRange(location: 0, length: rich.length), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+    }
+
+    /// show that the action of the section with the
+    /// @param identifier provided was done, for a moment: a checkmark in place of its symbol, and its header highlighted
+    func showDone(section identifier: String) {
+        guard !sectionsShowingDone.contains(identifier), let range = sectionRange(identifier) else { return }
+        sectionsShowingDone.insert(identifier)
+        let symbol = storage.attribute(.attachment, at: range.location, effectiveRange: nil) as? CardImageAttachment
+        let original = symbol?.image
+        if let checkmark = ILImage(systemName: "checkmark.circle.fill") {
+            symbol?.update(checkmark)
+        }
+        setHeaderHighlight(CardColor.accent.withAlphaComponent(0.2), section: identifier)
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            if let original {
+                symbol?.update(original)
+            }
+            self?.setHeaderHighlight(nil, section: identifier)
+            self?.sectionsShowingDone.remove(identifier)
+        }
+    }
+
+    /// set or remove the
+    /// @param highlight color behind the header of the
+    /// @param section with the identifier provided, wherever it is now, e.g. after a promise before it was fulfilled
+    private func setHeaderHighlight(_ highlight: ILColor?, section identifier: String) {
+        let storage = storage
+        storage.enumerateAttribute(.cardSection, in: NSRange(location: 0, length: storage.length)) { value, range, _ in
+            guard value as? String == identifier else { return }
+            if let highlight {
+                storage.addAttribute(.backgroundColor, value: highlight, range: range)
+            }
+            else {
+                storage.removeAttribute(.backgroundColor, range: range)
+            }
+        }
     }
 
 #if canImport(AppKit)

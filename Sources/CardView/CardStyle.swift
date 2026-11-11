@@ -125,4 +125,6 @@ public extension NSAttributedString.Key {
     static let cardPromise = NSAttributedString.Key("CardPromise")
     /// the identifier of the action the text performs when it's clicked or tapped
     static let cardAction = NSAttributedString.Key("CardAction")
+    /// the identifier of the section whose header the text is in, which performs the section's action
+    static let cardSection = NSAttributedString.Key("CardSection")
 }

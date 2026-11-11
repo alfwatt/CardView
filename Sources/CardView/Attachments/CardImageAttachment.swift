@@ -59,7 +59,7 @@ open class CardImageAttachment: CardAttachment, @unchecked Sendable {
         }
     }
 
-    @MainActor private func update(_ image: ILImage) {
+    @MainActor func update(_ image: ILImage) {
         self.image = image
         for imageView in imageViews {
             imageView.object?.image = image
