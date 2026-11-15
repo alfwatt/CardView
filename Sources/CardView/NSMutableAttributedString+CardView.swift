@@ -38,6 +38,66 @@ public extension NSMutableAttributedString {
         return link
     }
 
+    // MARK: - Spoilers
+
+    /// append the
+    /// @param string provided as a spoiler, hidden until it's clicked or tapped, in the
+    /// @param style at the
+    /// @param fontSize in the
+    /// @param paragraph style, remembered by the
+    /// @param identifier provided, or its text, when it's revealed
+    @discardableResult
+    func appendSpoiler(_ string: String, style: CardStyle = .text, identifier: String? = nil, fontSize: CGFloat,
+                       paragraph: NSParagraphStyle) -> NSAttributedString {
+        var attributes = style.attributes(fontSize: fontSize, paragraph: paragraph)
+        attributes[.cardSpoiler] = true
+        attributes[.cardSpoilerIdentifier] = identifier ?? string
+        let start = length
+        append(NSAttributedString(string: string, attributes: attributes))
+        let range = NSRange(location: start, length: length - start)
+        setSpoiler(hidden: true, range: range)
+        return attributedSubstring(from: range)
+    }
+
+    /// hide or reveal the spoiler in the
+    /// @param range provided, hidden text is drawn clear over a fill, so its shape shows but its text doesn't
+    func setSpoiler(hidden: Bool, range: NSRange) {
+        var runs: [(NSRange, ILColor?, ILColor?)] = []
+        enumerateAttributes(in: range) { attributes, run, _ in
+            runs.append((run, attributes[.foregroundColor] as? ILColor, attributes[.cardSpoilerColor] as? ILColor))
+        }
+        beginEditing()
+        for (run, color, saved) in runs {
+            addAttribute(.cardSpoiler, value: hidden, range: run)
+            if hidden {
+                if saved == nil {
+                    addAttribute(.cardSpoilerColor, value: color ?? CardColor.text, range: run)
+                }
+                addAttribute(.foregroundColor, value: ILColor.clear, range: run)
+                addAttribute(.backgroundColor, value: CardColor.spoiler, range: run)
+            }
+            else if let saved {
+                addAttribute(.foregroundColor, value: saved, range: run)
+                removeAttribute(.cardSpoilerColor, range: run)
+                removeAttribute(.backgroundColor, range: run)
+            }
+        }
+        endEditing()
+    }
+
+    /// hide the text marked as spoilers which isn't drawn hidden yet, e.g. text read from Markdown
+    func hideSpoilers() {
+        var ranges: [NSRange] = []
+        enumerateAttribute(.cardSpoiler, in: NSRange(location: 0, length: length)) { value, range, _ in
+            if value as? Bool == true {
+                ranges.append(range)
+            }
+        }
+        for range in ranges {
+            setSpoiler(hidden: true, range: range)
+        }
+    }
+
     // MARK: - Spacing
 
     @discardableResult

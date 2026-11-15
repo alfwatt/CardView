@@ -39,6 +39,10 @@ quotes, code blocks, tables and rules are read, and written back out the same wa
 is tagged with the `CardBlock` it is written out as, so a card built with the methods below, or edited by its
 user, can be written out as Markdown too.
 
+Cards also read and write spoilers, an extension of Markdown: type `>!` before text and `!<` after it, e.g.
+`The serial is >!C02XL0GHJGH5!<`, and the text is hidden until it's clicked or tapped, then hidden again by
+another. `>!` at the start of a line is a spoiler, not a quote.
+
 <a id="classes"></a>
 ## Classes
 
@@ -51,6 +55,9 @@ A good looking subclass of `NSTextView` and `UITextView`, laid out with TextKit 
   as: `text`, `header` (`#`), `subheader` (`##`), `strong` and `code`, with `centered`, `centeredHeader` and `gray`,
   which Markdown doesn't have, written out as text, and `appendLink(_:text:)`,
   `appendNewline()` and `appendTab()`
+- **Spoilers**: `appendSpoiler(_:style:identifier:)` appends hidden text, `revealedSpoilers` keeps the identifiers
+  of the ones revealed when the card is cleared and built again, and `revealsSpoilers = false` keeps them all hidden,
+  e.g. for screenshots
 - **Rules, Images, Buttons and Views**: `appendRule(color:width:)`, `appendImage(_:source:)`,
   `appendButton(_:image:action:)`, `appendButton(_:url:)`, `appendView(_:size:)`, which also embeds SwiftUI views
 - **Columns**: `paragraphStyle(columns:)`, `pushColumns(_:)` and `useColumns(_:)` lay text out in columns

@@ -119,10 +119,12 @@ struct CardMarkdownWriter {
         var code = false
         var strike = false
         var html = false
+        var spoiler = false
         var link: URL?
 
         func sameMarkup(_ other: Span) -> Bool {
-            bold == other.bold && italic == other.italic && code == other.code && strike == other.strike && html == other.html && link == other.link
+            bold == other.bold && italic == other.italic && code == other.code && strike == other.strike && html == other.html
+                && spoiler == other.spoiler && link == other.link
         }
     }
 
@@ -143,6 +145,7 @@ struct CardMarkdownWriter {
             span.code = font?.isMonospace == true
             span.strike = (attributes[.strikethroughStyle] as? Int ?? 0) != 0
             span.html = attributes[.cardHTML] != nil
+            span.spoiler = attributes[.cardSpoiler] != nil // hidden or revealed
             span.link = (attributes[.link] as? URL) ?? (attributes[.link] as? String).flatMap { URL(string: $0) }
             if let attachment = attributes[.attachment] as? NSTextAttachment {
                 if let convertible = attachment as? CardMarkdownConvertible, !convertible.isMarkdownBlock,
@@ -159,8 +162,24 @@ struct CardMarkdownWriter {
                 spans.append(span)
             }
         }
-        var markdown = spans.map(render).joined()
+        // the spans next to each other in a spoiler are written in one, e.g. `>!**bold** secret!<`
+        var markdown = ""
+        var index = 0
+        while index < spans.count {
+            guard spans[index].spoiler else {
+                markdown += render(spans[index])
+                index += 1
+                continue
+            }
+            var spoiler = ""
+            while index < spans.count, spans[index].spoiler {
+                spoiler += render(spans[index])
+                index += 1
+            }
+            markdown += Self.spoiler(spoiler)
+        }
         markdown = markdown.replacingOccurrences(of: "\u{2028}", with: "\\\n")
+        if spans.first?.spoiler == true, markdown.hasPrefix(">!") { return markdown } // a spoiler, not a quote
         return Self.escapedLineStart(markdown, block: block)
     }
 
@@ -187,6 +206,15 @@ struct CardMarkdownWriter {
         if span.bold { markdown = "**\(markdown)**" }
         if let link = span.link { markdown = "[\(markdown)](\(Self.relative(link, to: baseURL)))" }
         return String(leading) + markdown + String(trailing)
+    }
+
+    /// @returns the
+    /// @param markdown of a spoiler between `>!` and `!<`, its whitespace is kept outside of them
+    static func spoiler(_ markdown: String) -> String {
+        let leading = markdown.prefix { $0 == " " }
+        let trailing = markdown.reversed().prefix { $0 == " " }
+        guard leading.count < markdown.count else { return markdown }
+        return String(leading) + ">!" + markdown.dropFirst(leading.count).dropLast(trailing.count) + "!<" + String(trailing)
     }
 
     // MARK: - Blocks

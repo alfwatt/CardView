@@ -12,7 +12,7 @@ import UIKit
 extension CardTextView {
 
     private enum InlineStyle {
-        case bold, italic, code, strikethrough, link
+        case bold, italic, code, strikethrough, link, spoiler
     }
 
     /// the inline Markdown which ends with the character just typed, checked in order, the text between
@@ -25,6 +25,7 @@ extension CardTextView {
         (#"(?<![~\\])~~([^~\s](?:[^~]*[^~\s])?)~~$"#, .strikethrough),
         (#"(?<![`\\])`([^`]+)`$"#, .code),
         (#"(?<![!\\])\[([^\]]+)\]\(([^()\s]+)\)$"#, .link),
+        (#"(?<!\\)>!([^\s](?:.*?[^\s])?)!<$"#, .spoiler),
     ] as [(pattern: String, style: InlineStyle)]).map { (try! NSRegularExpression(pattern: $0.pattern), $0.style) }
 
     /// the prefixes of blocks, typed at the start of a paragraph and followed by a space
@@ -50,7 +51,7 @@ extension CardTextView {
         if last == " " {
             convertTypedPrefix()
         }
-        else if "*_~`)".contains(last) {
+        else if "*_~`)<".contains(last) {
             convertTypedInline()
         }
     }
@@ -162,7 +163,7 @@ extension CardTextView {
 
     // MARK: - Inline Styles
 
-    /// the closing delimiter of `**bold**`, `*italic*`, `` `code` ``, `~~strikethrough~~` or `[a link](url)`,
+    /// the closing delimiter of `**bold**`, `*italic*`, `` `code` ``, `~~strikethrough~~`, `[a link](url)` or `>!a spoiler!<`,
     /// typed after the rest of it, styles its text and removes its delimiters
     private func convertTypedInline() {
         let location = selection.location
@@ -200,6 +201,8 @@ extension CardTextView {
                 let target = (typed as NSString).substring(with: match.range(at: 2))
                 guard let url = URL(string: target, relativeTo: baseURL) else { return }
                 text.addAttribute(.link, value: url, range: whole)
+            case .spoiler:
+                text.setSpoiler(hidden: true, range: whole)
             }
             replace(range, with: text)
             typingAttributes = plain // what's typed next isn't styled

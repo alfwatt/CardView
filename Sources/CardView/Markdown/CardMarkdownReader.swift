@@ -145,13 +145,84 @@ struct CardMarkdownReader {
         }
     }
 
+    // MARK: - Spoilers
+
+    /// the private use characters which stand for `>!` and `!<` while Foundation parses the Markdown, which doesn't know spoilers,
+    /// and would read `>!` at the start of a line as a quote
+    static let spoilerStart: Character = "\u{E000}"
+    static let spoilerEnd: Character = "\u{E001}"
+
+    /// @returns the
+    /// @param markdown provided with each `>!spoiler!<` on a line marked by the spoiler characters, outside of code
+    static func markSpoilers(_ markdown: String) -> String {
+        guard markdown.contains(">!") else { return markdown }
+        var fenced = false
+        return markdown.components(separatedBy: "\n").map { line in
+            if line.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
+                fenced.toggle()
+                return line
+            }
+            return fenced ? line : markSpoilers(inLine: line)
+        }.joined(separator: "\n")
+    }
+
+    /// @returns the
+    /// @param line provided with its spoilers marked, skipping code spans and escaped characters
+    private static func markSpoilers(inLine line: String) -> String {
+        let characters = Array(line)
+        var marked: [Character] = []
+        var opening: Int? // where the `>!` waiting for its `!<` is
+        var fence = 0 // the backticks of the code span the line is in
+        var index = 0
+        while index < characters.count {
+            let character = characters[index]
+            let next = index + 1 < characters.count ? characters[index + 1] : nil
+            if character == "`" {
+                var run = 0
+                while index < characters.count, characters[index] == "`" {
+                    run += 1
+                    index += 1
+                }
+                fence = fence == 0 ? run : (fence == run ? 0 : fence)
+                marked += Array(repeating: "`", count: run)
+                continue
+            }
+            if fence == 0 {
+                if character == "\\", let next {
+                    marked += [character, next]
+                    index += 2
+                    continue
+                }
+                if character == ">", next == "!", opening == nil {
+                    opening = marked.count
+                    marked += [">", "!"]
+                    index += 2
+                    continue
+                }
+                if character == "!", next == "<", let start = opening, marked.count > start + 2 {
+                    marked.replaceSubrange(start..<(start + 2), with: [spoilerStart])
+                    marked.append(spoilerEnd)
+                    opening = nil
+                    index += 2
+                    continue
+                }
+            }
+            marked.append(character)
+            index += 1
+        }
+        return String(marked)
+    }
+
+    // MARK: - Reading
+
     func read(_ markdown: String) throws -> NSAttributedString {
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .full, failurePolicy: .returnPartiallyParsedIfPossible)
-        let parsed = try AttributedString(markdown: markdown, options: options, baseURL: baseURL)
+        let parsed = try AttributedString(markdown: Self.markSpoilers(markdown), options: options, baseURL: baseURL)
         let text = NSMutableAttributedString()
         var current: Block?
         var markedItems = Set<Int>()
         var lastCell: Int?
+        var inSpoiler = false
 
         for run in parsed.runs {
             var block = self.block(run.presentationIntent)
@@ -163,6 +234,7 @@ struct CardMarkdownReader {
                     }
                 }
                 lastCell = nil
+                inSpoiler = false // spoilers are marked within a line
                 if let item = block.listItem, markedItems.insert(item).inserted, let marker = block.marker {
                     var markerAttributes = block.attributes
                     markerAttributes[.cardListMarker] = true
@@ -217,8 +289,29 @@ struct CardMarkdownReader {
                 attributes[.attachment] = CardRuleAttachment()
                 string = String(Character(.attachmentCharacter))
             }
-            text.append(NSAttributedString(string: string, attributes: attributes))
+            // the spoiler characters start and end spoilers, which can span runs, e.g. `>!**bold** secret!<`
+            var segment = ""
+            func appendSegment() {
+                guard !segment.isEmpty else { return }
+                var segmentAttributes = attributes
+                if inSpoiler {
+                    segmentAttributes[.cardSpoiler] = true
+                }
+                text.append(NSAttributedString(string: segment, attributes: segmentAttributes))
+                segment = ""
+            }
+            for character in string {
+                if character == Self.spoilerStart || character == Self.spoilerEnd {
+                    appendSegment()
+                    inSpoiler = character == Self.spoilerStart
+                }
+                else {
+                    segment.append(character)
+                }
+            }
+            appendSegment()
         }
+        text.hideSpoilers()
         return text
     }
 

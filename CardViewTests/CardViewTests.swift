@@ -5,10 +5,12 @@ import Testing
 import AppKit
 typealias ILFont = NSFont
 typealias ILImage = NSImage
+typealias ILColor = NSColor
 #else
 import UIKit
 typealias ILFont = UIFont
 typealias ILImage = UIImage
+typealias ILColor = UIColor
 #endif
 
 /// a card wide enough to lay out columns and tables in
@@ -232,6 +234,37 @@ func symbol(_ name: String) -> ILImage {
         #expect(card.action(at: 0) == nil)
     }
 
+    @Test func spoiler() {
+        let card = makeCard()
+        card.append("Serial ")
+        card.appendSpoiler("C02XL0GHJGH5", identifier: "serial")
+        let start = (card.storage.string as NSString).range(of: "C02").location
+        #expect(card.storage.attribute(.cardSpoiler, at: start, effectiveRange: nil) as? Bool == true)
+        #expect(card.storage.attribute(.foregroundColor, at: start, effectiveRange: nil) as? ILColor == .clear)
+        #expect(card.spoiler(at: 0) == nil)
+        #expect(card.toggleSpoiler(at: start + 3))
+        #expect(card.storage.attribute(.cardSpoiler, at: start, effectiveRange: nil) as? Bool == false)
+        #expect(card.storage.attribute(.foregroundColor, at: start, effectiveRange: nil) as? ILColor != .clear)
+        #expect(card.revealedSpoilers == ["serial"])
+
+        card.clearCard() // built again, it's still revealed
+        card.appendSpoiler("C02XL0GHJGH5", identifier: "serial")
+        #expect(card.storage.attribute(.cardSpoiler, at: 0, effectiveRange: nil) as? Bool == false)
+        #expect(card.toggleSpoiler(at: 0))
+        #expect(card.revealedSpoilers.isEmpty)
+        #expect(card.storage.attribute(.cardSpoiler, at: 0, effectiveRange: nil) as? Bool == true)
+        #expect(card.markdown == ">!C02XL0GHJGH5!<")
+    }
+
+    @Test func spoilersStayHidden() {
+        let card = makeCard()
+        card.revealsSpoilers = false
+        card.revealedSpoilers = ["secret"]
+        card.appendSpoiler("secret")
+        #expect(!card.toggleSpoiler(at: 0))
+        #expect(card.storage.attribute(.cardSpoiler, at: 0, effectiveRange: nil) as? Bool == true)
+    }
+
     @Test func safeContentWidth() {
         #expect(makeCard().safeContentWidth == 432)
         #expect(CardTextView(frame: .zero, textContainer: nil).safeContentWidth == 320)
@@ -384,11 +417,46 @@ struct FormatterTests {
         "| Name | Value |\n| --- | --: |\n| a | 1 |\n| b | 2 |",
         "Above\n\n---\n\nBelow, with a line\\\nbreak",
         "1\\. starts like a list, with \\*stars\\* and snake_case",
+        "The serial is >!C02XL0GHJGH5!<, and >!**bold** secret!< too",
+        ">!a spoiler!< starts the line",
+        "\\>!not a spoiler!\\< or a quote",
     ])
     func roundTrip(_ markdown: String) throws {
         let written = CardMarkdown.markdown(from: try read(markdown))
         #expect(written == markdown)
         #expect(CardMarkdown.markdown(from: try read(written)) == written)
+    }
+
+    @Test func spoilers() throws {
+        let text = try read("The serial is >!C02XL0GHJGH5!<, and >!**bold** secret!<")
+        #expect(text.string == "The serial is C02XL0GHJGH5, and bold secret")
+        let string = text.string as NSString
+        var range = NSRange()
+        #expect(text.attribute(.cardSpoiler, at: string.range(of: "C02").location, effectiveRange: &range) as? Bool == true)
+        #expect(range == string.range(of: "C02XL0GHJGH5"))
+        #expect(text.attribute(.foregroundColor, at: range.location, effectiveRange: nil) as? ILColor == .clear)
+        #expect(text.attribute(.cardSpoiler, at: string.range(of: ", and").location, effectiveRange: nil) == nil)
+        let bold = string.range(of: "bold").location
+        #expect(text.attribute(.cardSpoiler, at: bold, effectiveRange: nil) as? Bool == true)
+        #expect((text.attribute(.font, at: bold, effectiveRange: nil) as! ILFont).isBold)
+        #expect(text.attribute(.cardSpoiler, at: string.range(of: "secret").location, effectiveRange: nil) as? Bool == true)
+    }
+
+    @Test func spoilerStartsALine() throws {
+        let text = try read(">!hidden!< at the start\n\n> a quote")
+        #expect(text.string == "hidden at the start\na quote")
+        #expect(blocks(text) == [.paragraph, .quote])
+        #expect(text.attribute(.cardSpoiler, at: 0, effectiveRange: nil) as? Bool == true)
+    }
+
+    @Test func spoilersNotInCode() throws {
+        let text = try read("`>!code!<` and >!unclosed\n\n```\n>!fenced!<\n```")
+        #expect(text.string == ">!code!< and >!unclosed\n>!fenced!<")
+        var index = 0
+        while index < text.length {
+            #expect(text.attribute(.cardSpoiler, at: index, effectiveRange: nil) == nil)
+            index += 1
+        }
     }
 
     @Test func builderToMarkdown() {
@@ -544,6 +612,15 @@ struct FormatterTests {
         type(typed, into: card)
         #expect(!card.storage.string.contains("*") && !card.storage.string.contains("_"))
         #expect(card.markdown == markdown)
+    }
+
+    @Test func spoiler() {
+        let card = editingCard()
+        type("a >!secret!< word", into: card)
+        #expect(card.storage.string == "a secret word")
+        #expect(card.storage.attribute(.cardSpoiler, at: 2, effectiveRange: nil) as? Bool == true)
+        #expect(card.storage.attribute(.cardSpoiler, at: 9, effectiveRange: nil) == nil)
+        #expect(card.markdown == "a >!secret!< word")
     }
 
     @Test func notConverted() {

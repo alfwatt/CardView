@@ -127,4 +127,10 @@ public extension NSAttributedString.Key {
     static let cardAction = NSAttributedString.Key("CardAction")
     /// the identifier of the section whose header the text is in, which performs the section's action
     static let cardSection = NSAttributedString.Key("CardSection")
+    /// marks a `>!spoiler!<`, true while it's hidden, false once it's revealed by a click or tap
+    static let cardSpoiler = NSAttributedString.Key("CardSpoiler")
+    /// the identifier the card remembers a revealed spoiler by, so it's still revealed when the card is built again
+    static let cardSpoilerIdentifier = NSAttributedString.Key("CardSpoilerIdentifier")
+    /// the color of a hidden spoiler's text, which is drawn clear over its fill until it's revealed
+    static let cardSpoilerColor = NSAttributedString.Key("CardSpoilerColor")
 }

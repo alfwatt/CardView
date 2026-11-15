@@ -16,12 +16,14 @@ enum CardColor {
     static var tertiary: ILColor { .tertiaryLabelColor }
     static var link: ILColor { .linkColor }
     static var accent: ILColor { .controlAccentColor }
+    static var spoiler: ILColor { .tertiaryLabelColor }
 #else
     static var text: ILColor { .label }
     static var secondary: ILColor { .secondaryLabel }
     static var tertiary: ILColor { .tertiaryLabel }
     static var link: ILColor { .link }
     static var accent: ILColor { .tintColor }
+    static var spoiler: ILColor { .tertiaryLabel }
 #endif
 }
 

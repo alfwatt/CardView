@@ -471,6 +471,64 @@ open class CardTextView: ILTextView {
         return attributes
     }
 
+    // MARK: - Spoilers
+
+    /// clicking or tapping a `>!spoiler!<` reveals it, and again hides it, when it's false spoilers stay hidden, e.g. for screenshots
+    public var revealsSpoilers = true
+
+    /// the identifiers of the spoilers which are revealed, kept when the card is cleared, so a card which is built again,
+    /// e.g. to update its values, shows the spoilers that were revealed
+    public var revealedSpoilers: Set<String> = []
+
+    /// append the
+    /// @param string provided as a spoiler, hidden until it's clicked or tapped, unless the spoiler with the
+    /// @param identifier provided, or its text, was revealed, in the
+    /// @param style provided, at the card's font size in its top style
+    @discardableResult
+    public func appendSpoiler(_ string: String, style: CardStyle = .text, identifier: String? = nil) -> NSAttributedString {
+        let start = storage.length
+        let spoiler = storage.appendSpoiler(string, style: style, identifier: identifier, fontSize: fontSize, paragraph: topStyle)
+        if revealsSpoilers, revealedSpoilers.contains(identifier ?? string) {
+            let range = NSRange(location: start, length: spoiler.length)
+            storage.setSpoiler(hidden: false, range: range)
+            return storage.attributedSubstring(from: range)
+        }
+        return spoiler
+    }
+
+    /// @returns the range of the spoiler at the
+    /// @param index provided, or the character before it, nil if there isn't one there
+    func spoiler(at index: Int) -> NSRange? {
+        let storage = storage
+        for location in [index, index - 1] where location >= 0 && location < storage.length {
+            var range = NSRange()
+            if storage.attribute(.cardSpoiler, at: location, longestEffectiveRange: &range,
+                                 in: NSRange(location: 0, length: storage.length)) != nil {
+                return range
+            }
+        }
+        return nil
+    }
+
+    /// reveal the hidden spoiler, or hide the revealed spoiler, at the
+    /// @param index provided
+    /// @returns true if there was a spoiler there to reveal or hide
+    @discardableResult
+    func toggleSpoiler(at index: Int) -> Bool {
+        guard revealsSpoilers, let range = spoiler(at: index) else { return false }
+        let hidden = storage.attribute(.cardSpoiler, at: range.location, effectiveRange: nil) as? Bool ?? false
+        let identifier = storage.attribute(.cardSpoilerIdentifier, at: range.location, effectiveRange: nil) as? String
+            ?? (storage.string as NSString).substring(with: range)
+        storage.setSpoiler(hidden: !hidden, range: range)
+        if hidden {
+            revealedSpoilers.insert(identifier)
+        }
+        else {
+            revealedSpoilers.remove(identifier)
+        }
+        return true
+    }
+
     /// @returns the action of the text at the
     /// @param index provided, or of the character before it, so the end of an action's line performs it too
     func action(at index: Int) -> (@MainActor () -> Void)? {
@@ -594,7 +652,10 @@ open class CardTextView: ILTextView {
         if let action = action(at: index) {
             action()
         }
-        else {
+        else if toggleSpoiler(at: index), !isEditable {
+            return
+        }
+        else { // and an editable card's click puts the insertion point in the spoiler it reveals
             super.mouseDown(with: event)
         }
     }
@@ -613,11 +674,18 @@ open class CardTextView: ILTextView {
         guard gestureRecognizer === actionTap else {
             return super.gestureRecognizerShouldBegin(gestureRecognizer)
         }
-        return characterIndex(at: gestureRecognizer.location(in: self)).flatMap(action(at:)) != nil
+        guard let index = characterIndex(at: gestureRecognizer.location(in: self)) else { return false }
+        return action(at: index) != nil || (revealsSpoilers && spoiler(at: index) != nil)
     }
 
     @objc private func onActionTap(_ tap: UITapGestureRecognizer) {
-        characterIndex(at: tap.location(in: self)).flatMap(action(at:))?()
+        guard let index = characterIndex(at: tap.location(in: self)) else { return }
+        if let action = action(at: index) {
+            action()
+        }
+        else {
+            toggleSpoiler(at: index)
+        }
     }
 #endif
 
