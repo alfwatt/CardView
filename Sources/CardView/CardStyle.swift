@@ -133,4 +133,8 @@ public extension NSAttributedString.Key {
     static let cardSpoilerIdentifier = NSAttributedString.Key("CardSpoilerIdentifier")
     /// the color of a hidden spoiler's text, which is drawn clear over its fill until it's revealed
     static let cardSpoilerColor = NSAttributedString.Key("CardSpoilerColor")
+    /// the whole of a key in a right aligned first column, which is shown truncated in the middle to fit the column
+    static let cardFullKey = NSAttributedString.Key("CardFullKey")
+    /// marks the line break between a key and its value in a card too narrow for their columns, it's a tab again when there's room
+    static let cardKeyBreak = NSAttributedString.Key("CardKeyBreak")
 }

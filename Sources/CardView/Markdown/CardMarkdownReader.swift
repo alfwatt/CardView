@@ -27,7 +27,24 @@ public enum CardMarkdown {
     /// @param text provided, with the sources of images and links relative to the
     /// @param baseURL provided
     public static func markdown(from text: NSAttributedString, baseURL: URL? = nil) -> String {
-        CardMarkdownWriter(baseURL: baseURL).write(text)
+        CardMarkdownWriter(baseURL: baseURL).write(withFullKeys(text))
+    }
+
+    /// @returns the text with the keys truncated to fit their columns whole again
+    static func withFullKeys(_ text: NSAttributedString) -> NSAttributedString {
+        var keys: [(range: NSRange, key: String)] = []
+        text.enumerateAttribute(.cardFullKey, in: NSRange(location: 0, length: text.length)) { value, range, _ in
+            if let key = value as? String {
+                keys.append((range, key))
+            }
+        }
+        guard !keys.isEmpty else { return text }
+        let whole = NSMutableAttributedString(attributedString: text)
+        for (range, key) in keys.reversed() {
+            whole.replaceCharacters(in: range, with: key)
+            whole.removeAttribute(.cardFullKey, range: NSRange(location: range.location, length: (key as NSString).length))
+        }
+        return whole
     }
 
     // MARK: - Layout

@@ -57,14 +57,18 @@ open class CardTextView: ILTextView {
 
     /// the style stack, the top style is first
     private var styleStack: [NSParagraphStyle] = []
-    /// the columns of each paragraph style made from them, so they're laid out again when the card is resized
-    private let columnStyles = NSMapTable<NSParagraphStyle, NSArray>(keyOptions: [.strongMemory, .objectPointerPersonality],
+    /// the columns of each paragraph style made from them, so they're laid out again when the card is resized, by equal styles,
+    /// not the same one, the text storage swaps a style for an equal one another text already has
+    private let columnStyles = NSMapTable<NSParagraphStyle, NSArray>(keyOptions: [.strongMemory, .objectPersonality],
                                                                     valueOptions: .strongMemory)
     /// the width of the text the columns and tables were laid out in
     private var laidOutWidth: CGFloat = 0
 
     /// the space around the text of every card, on the Mac and iOS, a TV's cards stay inside its title safe area
     static let margin: CGFloat = 16
+
+    /// the narrowest a card gets on the Mac, a narrower pane clips it rather than squeezing its text away
+    public static let minimumWidth: CGFloat = 120
 
     // MARK: - Initializers
 
@@ -106,6 +110,8 @@ open class CardTextView: ILTextView {
         drawsBackground = false
 #endif
         linkTextAttributes = [.foregroundColor: CardColor.link, .underlineStyle: NSUnderlineStyle.single.rawValue]
+        NotificationCenter.default.addObserver(self, selector: #selector(storageDidEdit(_:)), name: NSTextStorage.didProcessEditingNotification,
+                                               object: nil) // the storage may not be made yet, a TextKit 2 view's is made later
     }
 
     /// the card's text storage
@@ -157,15 +163,218 @@ open class CardTextView: ILTextView {
 
 #if canImport(AppKit)
     open override func setFrameSize(_ newSize: NSSize) {
-        super.setFrameSize(newSize)
+        super.setFrameSize(NSSize(width: max(newSize.width, Self.minimumWidth), height: newSize.height))
         layoutWidth()
+    }
+
+    open override func layout() {
+        fitKeys() // before the text is laid out, an edit after it leaves the viewport blank until the next layout
+        super.layout()
     }
 #else
     open override func layoutSubviews() {
-        super.layoutSubviews()
         layoutWidth()
+        fitKeys()
+        super.layoutSubviews()
     }
 #endif
+
+    // MARK: - Keys
+
+    /// the keys are fitted to their columns at the next layout, after the text changes or the card's width does
+    private(set) var keysNeedFitting = false
+    /// the keys are being fitted, their edits don't need fitting again
+    private var fittingKeys = false
+
+    @objc private func storageDidEdit(_ note: Notification) {
+        guard !fittingKeys, let edited = note.object as? NSTextStorage, edited === textStorage, edited.editedMask.contains(.editedCharacters) else { return }
+        setKeysNeedFitting()
+    }
+
+    private func setKeysNeedFitting() {
+        keysNeedFitting = true
+#if canImport(AppKit)
+        needsLayout = true
+#else
+        setNeedsLayout()
+#endif
+    }
+
+    /// the narrowest a key's column and its value's column get, in ems of the card's font size, a narrower card breaks the
+    /// key and its value onto lines of their own
+    static let narrowestKey: CGFloat = 4
+    static let narrowestValue: CGFloat = 6
+
+    /// fit the keys in a right aligned first column to the card's width, e.g. `\tBluetoothDeviceAddressData\tvalue`: in a narrow
+    /// card each key is on a line of its own with its value indented below it, otherwise a key wider than its column is truncated
+    /// in the middle, so it doesn't push its value out of the next column, a wider card shows more of it again,
+    /// an editable card's keys are left as they're typed
+    private func fitKeys() {
+#if os(tvOS)
+        let editable = false // a TV's cards are never edited
+#else
+        let editable = isEditable
+#endif
+        guard keysNeedFitting, !editable, textWidth > 0 else { return }
+        keysNeedFitting = false
+        fittingKeys = true
+        defer { fittingKeys = false }
+        storage.beginEditing()
+        breakOrJoinKeys()
+        truncateKeys()
+        storage.endEditing()
+    }
+
+    /// the edges of the columns, from the card's leading edge, at its width
+    private func columnEdges(_ columns: [CardColumn]) -> [CGFloat] {
+        var edge: CGFloat = 0
+        return columns.map { column in
+            let width: CGFloat = switch column.width {
+            case .points(let points): points
+            case .fraction(let fraction): textWidth * fraction
+            }
+            edge += width
+            return edge
+        }
+    }
+
+    /// a paragraph style for the columns' keys and values on lines of their own, the value indented under its key
+    private func brokenStyle(_ columns: [CardColumn], from style: NSParagraphStyle) -> NSParagraphStyle {
+        let broken = NSMutableParagraphStyle()
+        broken.setParagraphStyle(style)
+        broken.tabStops = []
+        broken.firstLineHeadIndent = 0
+        broken.headIndent = fontSize
+        columnStyles.setObject(columns.map(CardColumnBox.init) as NSArray, forKey: broken) // laid out again at a new width
+        return broken
+    }
+
+    /// break the keys and their values onto lines of their own in a narrow card, `key⏎value`, the line break marked, and join them
+    /// again as `\tkey\tvalue` when the card is wider, in the storage's editing
+    private func breakOrJoinKeys() {
+        let storage = storage
+        let text = storage.string as NSString
+        var paragraphs: [NSRange] = []
+        text.enumerateSubstrings(in: NSRange(location: 0, length: text.length), options: [.byParagraphs, .substringNotRequired]) { _, paragraph, _, _ in
+            paragraphs.append(paragraph)
+        }
+        var broken: [[CardColumn]: NSParagraphStyle] = [:]
+        var joined: [[CardColumn]: NSParagraphStyle] = [:]
+        for paragraph in paragraphs.reversed() where paragraph.length > 1 { // from the end, so the earlier ranges stay put
+            guard let style = storage.attribute(.paragraphStyle, at: paragraph.location, effectiveRange: nil) as? NSParagraphStyle,
+                  let boxes = columnStyles.object(forKey: style) as? [CardColumnBox], let first = boxes.first?.column,
+                  case .right = first else { continue }
+            let columns = boxes.map(\.column)
+            let edges = columnEdges(columns)
+            let em = fontSize
+            let narrow = edges[0] < CardTextView.narrowestKey * em || textWidth - (edges.last ?? 0) < CardTextView.narrowestValue * em
+            var lineBreak: Int?
+            storage.enumerateAttribute(.cardKeyBreak, in: paragraph) { value, range, stop in
+                if value != nil {
+                    lineBreak = range.location
+                    stop.pointee = true
+                }
+            }
+            let current = storage.string as NSString
+            if let lineBreak {
+                let whole = NSRange(location: paragraph.location, length: lineBreak + 1 - paragraph.location)
+                if narrow { // stays broken, in the broken style, which the card's width reset
+                    let brokenStyle = broken[columns] ?? brokenStyle(columns, from: style)
+                    broken[columns] = brokenStyle
+                    storage.addAttribute(.paragraphStyle, value: brokenStyle, range: current.paragraphRange(for: whole))
+                    continue
+                }
+                var attributes = storage.attributes(at: lineBreak, effectiveRange: nil) // join: the line break a tab again, and a tab before the key
+                attributes[.cardKeyBreak] = nil
+                storage.replaceCharacters(in: NSRange(location: lineBreak, length: 1), with: NSAttributedString(string: "\t", attributes: attributes))
+                storage.insert(NSAttributedString(string: "\t", attributes: attributes), at: paragraph.location)
+                let joinedStyle = joined[columns] ?? paragraphStyle(columns: columns)
+                joined[columns] = joinedStyle
+                storage.addAttribute(.paragraphStyle, value: joinedStyle, range: (storage.string as NSString).paragraphRange(for: NSRange(location: paragraph.location, length: 0)))
+                continue
+            }
+            guard narrow, paragraph.length > 2, current.character(at: paragraph.location) == 9 else { continue }
+            let start = paragraph.location + 1
+            let end = current.range(of: "\t", range: NSRange(location: start, length: NSMaxRange(paragraph) - start)).location
+            guard end != NSNotFound, end > start, !current.substring(with: NSRange(location: start, length: end - start)).contains("\u{FFFC}") else { continue }
+            // break: the tab after the key a line break, the whole key, and no tab before it
+            var breakAttributes = storage.attributes(at: end, effectiveRange: nil)
+            breakAttributes[.cardKeyBreak] = true
+            storage.replaceCharacters(in: NSRange(location: end, length: 1), with: NSAttributedString(string: "\u{2028}", attributes: breakAttributes))
+            var keyAttributes = storage.attributes(at: start, effectiveRange: nil)
+            if let key = keyAttributes[.cardFullKey] as? String {
+                keyAttributes[.cardFullKey] = nil
+#if canImport(AppKit)
+                keyAttributes[.toolTip] = nil
+#endif
+                storage.replaceCharacters(in: NSRange(location: start, length: end - start), with: NSAttributedString(string: key, attributes: keyAttributes))
+            }
+            storage.deleteCharacters(in: NSRange(location: paragraph.location, length: 1))
+            let brokenStyle = broken[columns] ?? brokenStyle(columns, from: style)
+            broken[columns] = brokenStyle
+            storage.addAttribute(.paragraphStyle, value: brokenStyle, range: (storage.string as NSString).paragraphRange(for: NSRange(location: paragraph.location, length: 0)))
+        }
+    }
+
+    /// truncate the keys wider than their columns, in the storage's editing
+    private func truncateKeys() {
+        let storage = storage
+        let columnStyles = columnStyles
+        let text = storage.string as NSString
+        let tab = unichar(9)
+        var edits: [(range: NSRange, key: NSAttributedString)] = []
+        text.enumerateSubstrings(in: NSRange(location: 0, length: text.length), options: [.byParagraphs, .substringNotRequired]) { _, paragraph, _, _ in
+            guard paragraph.length > 2, text.character(at: paragraph.location) == tab,
+                  let style = storage.attribute(.paragraphStyle, at: paragraph.location, effectiveRange: nil) as? NSParagraphStyle,
+                  columnStyles.object(forKey: style) != nil, // the card's columns, not a table's
+                  let column = style.tabStops.first, column.alignment == .right else { return }
+            let start = paragraph.location + 1
+            let end = text.range(of: "\t", range: NSRange(location: start, length: NSMaxRange(paragraph) - start)).location
+            guard end != NSNotFound, end > start else { return }
+            let range = NSRange(location: start, length: end - start)
+            let shown = text.substring(with: range)
+            guard !shown.contains("\u{FFFC}") else { return } // an image or a view, not a key
+            var attributes = storage.attributes(at: start, effectiveRange: nil)
+            let key = attributes[.cardFullKey] as? String ?? shown
+            attributes[.cardFullKey] = nil
+#if canImport(AppKit)
+            attributes[.toolTip] = nil
+#endif
+            let fitted = CardTextView.truncatingMiddle(key, attributes: attributes, toFit: column.location - 4) // a little space before the column's edge
+            guard fitted != shown else { return }
+            if fitted != key {
+                attributes[.cardFullKey] = key
+#if canImport(AppKit)
+                attributes[.toolTip] = key
+#endif
+            }
+            edits.append((range, NSAttributedString(string: fitted, attributes: attributes)))
+        }
+        for edit in edits.reversed() {
+            storage.replaceCharacters(in: edit.range, with: edit.key)
+        }
+    }
+
+    /// @returns the string, or its start and end with an ellipsis between them, as much of it as fits the width in the attributes
+    static func truncatingMiddle(_ string: String, attributes: [NSAttributedString.Key: Any], toFit width: CGFloat) -> String {
+        var measured = attributes
+        measured[.paragraphStyle] = nil
+        func fits(_ text: String) -> Bool {
+            NSAttributedString(string: text, attributes: measured).size().width <= width
+        }
+        guard width > 0, !fits(string) else { return string }
+        let characters = Array(string)
+        func kept(_ count: Int) -> String {
+            let head = (count + 1) / 2
+            return String(characters.prefix(head)) + "…" + String(characters.suffix(count - head))
+        }
+        var low = 0, high = characters.count - 1 // the characters kept, the most which fit
+        while low < high {
+            let middle = (low + high + 1) / 2
+            if fits(kept(middle)) { low = middle } else { high = middle - 1 }
+        }
+        return kept(low)
+    }
 
     /// the width of the text, inside the text container's insets and padding, the columns are fractions of it
     public var textWidth: CGFloat {
@@ -213,6 +422,7 @@ open class CardTextView: ILTextView {
             }
         }
         laidOutWidth = width
+        setKeysNeedFitting() // the columns moved
     }
 
     // MARK: - Style Stack

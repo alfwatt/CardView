@@ -111,6 +111,149 @@ func symbol(_ name: String) -> ILImage {
         #expect(abs((card.topStyle.tabStops[0].location) - after) < 0.01)
     }
 
+    /// a card's columns follow its width when another card has the same columns, and the storage swaps the style for that card's
+    @Test func columnsFollowWidthBesideAnotherCard() {
+        func card() -> CardTextView {
+            let card = makeCard()
+            card.useColumns([.right(.fraction(0.3)), .left(.points(5))])
+            card.appendTab()
+            card.append("name", style: .strong)
+            card.appendTab()
+            card.append("value")
+            return card
+        }
+        let first = card(), second = card()
+        resize(second, width: 832)
+        let stops = (second.storage.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as! NSParagraphStyle).tabStops
+        #expect(abs(stops[0].location - second.textWidth * 0.3) < 0.01)
+        #expect(first.storage.length > 0)
+    }
+
+    /// the text of the key on the card's first line, after its leading tab
+    func key(_ card: CardTextView) -> String {
+        String(card.storage.string.split(separator: "\t", omittingEmptySubsequences: false)[1])
+    }
+
+    func layOut(_ card: CardTextView) {
+#if canImport(AppKit)
+        card.layout()
+#else
+        card.layoutSubviews()
+#endif
+    }
+
+    @Test func longKeysTruncateInTheMiddle() {
+        let card = makeCard()
+        card.useColumns([.right(.fraction(0.3)), .left(.points(5))])
+        let long = "BluetoothDeviceAddressDataWhichIsFarTooLongForItsColumn"
+        card.appendTab()
+        card.append(long, style: .strong)
+        card.appendTab()
+        card.append("value")
+        layOut(card)
+        let shown = key(card)
+        #expect(shown.contains("…"))
+        #expect(shown.hasPrefix("Blue"))
+        #expect(shown.hasSuffix("umn"))
+        #expect(card.storage.attribute(.cardFullKey, at: 1, effectiveRange: nil) as? String == long)
+        let width = NSAttributedString(string: shown, attributes: [.font: card.storage.attribute(.font, at: 1, effectiveRange: nil)!]).size().width
+        #expect(width <= card.textWidth * 0.3)
+        #expect(card.storage.string.hasSuffix("\tvalue"))
+        #expect(card.markdown.contains(long)) // written whole
+
+        resize(card, width: 2400) // room for all of it again
+        layOut(card)
+        #expect(key(card) == long)
+        #expect(card.storage.attribute(.cardFullKey, at: 1, effectiveRange: nil) == nil)
+    }
+
+    @Test func narrowCardsBreakKeysFromValues() {
+        let card = makeCard()
+        card.useColumns([.right(.fraction(0.3)), .left(.points(5))])
+        let long = "BluetoothDeviceAddressData"
+        for (key, value) in [(long, "00:11:22:33:44:55"), ("name", "Keyboard")] {
+            card.appendNewline()
+            card.appendTab()
+            card.append(key, style: .strong)
+            card.appendTab()
+            card.append(value)
+        }
+        #expect(card.keysNeedFitting)
+        resize(card, width: 180) // too narrow for the columns
+        #expect(card.keysNeedFitting)
+        layOut(card)
+        #expect(!card.keysNeedFitting)
+        #expect(card.storage.string == "\n\(long)\u{2028}00:11:22:33:44:55\nname\u{2028}Keyboard")
+        let broken = card.storage.attribute(.paragraphStyle, at: 1, effectiveRange: nil) as! NSParagraphStyle
+        #expect(broken.tabStops.isEmpty && broken.headIndent > 0)
+
+        resize(card, width: 432) // room for the columns again
+        layOut(card)
+        let joined = card.storage.string.components(separatedBy: "\n")
+        #expect(joined.count == 3)
+        #expect(joined[1].hasPrefix("\tBlue") && joined[1].hasSuffix("\t00:11:22:33:44:55"))
+        #expect(joined[2] == "\tname\tKeyboard")
+        #expect((card.storage.attribute(.paragraphStyle, at: 1, effectiveRange: nil) as! NSParagraphStyle).tabStops.count == 2)
+
+        resize(card, width: 180) // and narrow again, with the whole key
+        layOut(card)
+        #expect(card.storage.string.hasPrefix("\n\(long)\u{2028}"))
+    }
+
+    @Test func shortKeysStay() {
+        let card = makeCard()
+        card.useColumns([.right(.fraction(0.3)), .left(.points(5))])
+        card.appendTab()
+        card.append("name", style: .strong)
+        card.appendTab()
+        card.append("value")
+        layOut(card)
+        #expect(card.storage.string == "\tname\tvalue")
+    }
+
+#if canImport(AppKit)
+    /// every row is laid out in a window after the keys are fitted, broken or joined, and the card is no narrower than its minimum
+    @Test func fittedKeysAreLaidOut() {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 432, height: 600), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+        let scroll = NSScrollView(frame: window.contentView!.bounds)
+        scroll.autoresizingMask = [.width, .height]
+        let card = CardTextView(frame: scroll.bounds)
+        card.autoresizingMask = [.width]
+        scroll.documentView = card
+        window.contentView!.addSubview(scroll)
+        for width in [432.0, 300, 150, 100, 432] {
+            card.clearCard()
+            card.useColumns([.right(.fraction(0.3)), .left(.points(5))])
+            for (key, value) in [("address", "00:11:22:33:44:55"), ("ManufacturerDataLongKeyName", "4C 00 10 05"), ("Model Number String", "A1644")] {
+                card.appendNewline()
+                card.appendTab()
+                card.append(key, style: .strong)
+                card.appendTab()
+                card.append(value)
+            }
+            window.layoutIfNeeded()
+            window.setContentSize(NSSize(width: width, height: 600))
+            window.layoutIfNeeded()
+            var fragments = 0, laidOut = 0
+            card.textLayoutManager!.enumerateTextLayoutFragments(from: card.textLayoutManager!.documentRange.location, options: []) { fragment in
+                fragments += 1
+                if fragment.state == .layoutAvailable { laidOut += 1 }
+                return true
+            }
+            #expect(fragments == 4 && laidOut == fragments, "\(laidOut) of \(fragments) rows laid out at \(width)")
+            #expect(card.frame.width >= CardTextView.minimumWidth)
+        }
+    }
+#endif
+
+    @Test func truncatingMiddle() {
+        let attributes: [NSAttributedString.Key: Any] = [.font: ILFont.systemFont(ofSize: 12)]
+        #expect(CardTextView.truncatingMiddle("short", attributes: attributes, toFit: 200) == "short")
+        let fitted = CardTextView.truncatingMiddle("abcdefghijklmnopqrstuvwxyz", attributes: attributes, toFit: 60)
+        #expect(fitted.hasPrefix("a") && fitted.hasSuffix("z") && fitted.contains("…"))
+        #expect(NSAttributedString(string: fitted, attributes: attributes).size().width <= 60)
+    }
+
     // MARK: - Promises
 
     @Test func promise() {
