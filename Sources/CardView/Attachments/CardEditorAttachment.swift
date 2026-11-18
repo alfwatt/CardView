@@ -18,6 +18,8 @@ open class CardEditorAttachment: CardAttachment, @unchecked Sendable {
     public let symbol: String?
     /// the value as it's been edited
     public private(set) var value: Any?
+    /// the width of a text or tags field, nil to fill the rest of its line
+    public var width: CGFloat?
     let onChange: @MainActor (Any?) -> Void
 
     /// the editor's control, made the first time it's laid out, so it keeps its focus when the text is laid out again
@@ -102,7 +104,7 @@ open class CardEditorAttachment: CardAttachment, @unchecked Sendable {
     @MainActor open override func size(of view: ILView, lineWidth: CGFloat, font: ILFont?) -> CGSize {
         switch type {
         case .text, .tags:
-            return CGSize(width: max(lineWidth - 2, 40), height: Self.height(of: view))
+            return CGSize(width: min(width ?? .greatestFiniteMagnitude, max(lineWidth - 2, 40)), height: Self.height(of: view))
         default:
             return CardAttachment.fit(view.cardFittingSize, in: lineWidth)
         }

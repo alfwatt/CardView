@@ -9,6 +9,13 @@ import UIKit
 /// Labeled key: value lines, formatted or edited as a `KeyValueFormatter` or `KeyValueEditor` describes their keys
 public extension CardTextView {
 
+    /// append an
+    /// @param attachment in the card's text style, e.g. an editor made for a line of the app's own
+    @discardableResult
+    func appendAttachment(_ attachment: NSTextAttachment) -> NSAttributedString {
+        storage.appendAttachment(attachment, fontSize: fontSize, paragraph: topStyle)
+    }
+
     /// append a
     /// @param key and its
     /// @param value to the card, labeled and formatted as the
@@ -46,7 +53,7 @@ public extension CardTextView {
         append(prefix)
         append(editors.label(forKey: key), style: .strong)
         append(separator)
-        storage.appendAttachment(editor, fontSize: fontSize, paragraph: topStyle)
+        appendAttachment(editor)
         appendNewline()
         return editor
     }

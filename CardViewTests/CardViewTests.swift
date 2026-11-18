@@ -1022,6 +1022,9 @@ struct FormatterTests {
         let size = text.size(of: text.makeView(), lineWidth: 300, font: nil)
         #expect(size.width == 298)
         #expect(size.height > 0)
+        text.width = 120
+        #expect(text.size(of: text.makeView(), lineWidth: 300, font: nil).width == 120)
+        #expect(text.size(of: text.makeView(), lineWidth: 100, font: nil).width == 98)
     }
 #endif
 }
