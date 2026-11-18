@@ -826,3 +826,202 @@ struct FormatterTests {
         #expect(CardButtonAttachment(title: "Act") {}.markdown(relativeTo: nil) == nil)
     }
 }
+
+// MARK: -
+
+@MainActor struct KeyValueTests {
+
+    let labels = CardKeyValueLabels(labels: [
+        "size": ["label": "Size", "formatter": "CardBytesFormatter"],
+        "rate": ["label": "Rate", "units": "Hz"],
+        "protection": ["label": "Protection", "values": ["none": "None", "complete": "Complete"]],
+        "link": ["formatter": "CardLinkFormatter", "symbol": "link"],
+        "Priority": ["editor": "menu", "editor/choices": ["⇈", "↑", "↓", "⇊"], "values": ["⇈": "Highest"]],
+        "level": ["editor": "radio", "values": ["b": "Bee", "a": "Ay"]]
+    ])
+
+    @Test func labelsAndReadableKeys() {
+        #expect(labels.label(forKey: "size") == "Size")
+        #expect(labels.label(forKey: "kMDItemFSSize") == "FS Size")
+        #expect(CardKeyValueLabels.readable("SubsecTimeOriginal") == "Subsec Time Original")
+        #expect(CardKeyValueLabels.readable("public.url") == "public.url")
+        #expect(labels.symbol(forKey: "link") == "link")
+    }
+
+    @Test func formatterByClassName() {
+        #expect(labels.formatter(forKey: "size") is CardBytesFormatter)
+        #expect(labels.formatter(forKey: "link") is CardLinkFormatter)
+        #expect(labels.formatter(forKey: "unknown") == nil)
+        let rate = labels.formatter(forKey: "rate") as? CardUnitsFormatter
+        #expect(rate?.units == "Hz")
+        #expect(rate?.string(for: NSNumber(value: 440)) == "440\u{202F}Hz")
+    }
+
+    @Test func valuesFormatter() {
+        let formatter = labels.formatter(forKey: "protection")
+        #expect(formatter is CardValuesFormatter)
+        #expect(formatter?.string(for: "complete") == "Complete")
+        #expect(formatter?.string(for: "other") == "other")
+    }
+
+    @Test func merging() {
+        let merged = labels.merging(["size": ["label": "Bytes"], "new": ["label": "New"]])
+        #expect(merged.label(forKey: "size") == "Bytes")
+        #expect(merged.formatter(forKey: "size") is CardBytesFormatter) // the rest of the key is kept
+        #expect(merged.label(forKey: "new") == "New")
+    }
+
+    @Test func links() {
+        let formatter = CardLinkFormatter()
+        let commit = "data:git/commit,1e19653ad169a79cf7734a479a8fb5788b97bec8"
+        #expect(formatter.string(for: commit) == "commit 1e19653")
+        #expect(formatter.string(for: "lit:3f93fa15") == "lit:3f93fa15")
+        #expect(formatter.string(for: "not a link") == "not a link")
+        for link in ["https://istumbler.net", "lit:3f93fa15", commit] {
+            let formatted = formatter.attributedString(for: link, withDefaultAttributes: [:])
+            #expect((formatted?.attribute(.link, at: 0, effectiveRange: nil) as? URL)?.absoluteString == link)
+        }
+        #expect(formatter.attributedString(for: "plain", withDefaultAttributes: [:])?.attribute(.link, at: 0, effectiveRange: nil) == nil)
+    }
+
+    @Test func appendKeyValue() {
+        let card = makeCard()
+        card.appendKeyValue("size", value: NSNumber(value: 2_500), labels: labels)
+        card.appendKeyValue("missing", value: nil, labels: labels)
+        #expect(card.storage.string == "\tSize\t2.5\u{202F}kB\n")
+    }
+
+    // MARK: - Editors
+
+    @Test func choices() {
+        #expect(labels.editorType(forKey: "Priority") == .menu)
+        #expect(labels.editorType(forKey: "size") == nil)
+        #expect(labels.choices(forKey: "Priority").map(\.value) == ["⇈", "↑", "↓", "⇊"])
+        #expect(labels.choices(forKey: "Priority").first?.label == "Highest")
+        #expect(labels.choices(forKey: "level") == [CardChoice(value: "a", label: "Ay"), CardChoice(value: "b", label: "Bee")])
+    }
+
+    @Test func appendEditor() {
+        let card = makeCard()
+        let editor = card.appendEditor("Priority", value: "↑", editors: labels) { _ in }
+        #expect(editor?.type == .menu)
+        #expect(card.storage.string == "\tPriority\t\u{FFFC}\n")
+        #expect(card.appendEditor("size", value: NSNumber(value: 2_000), editors: labels) { _ in } == nil) // formatted instead
+    }
+
+    /// an editor of the
+    /// @param type provided for the
+    /// @param value, and the values it reports
+    func editor(_ type: CardEditorType, _ value: Any?, choices: [String] = []) -> (CardEditorAttachment, Reported) {
+        let reported = Reported()
+        let editor = CardEditorAttachment(key: "key", type: type, value: value, choices: choices.map { CardChoice(value: $0) }) {
+            reported.values.append($0)
+        }
+        return (editor, reported)
+    }
+
+    final class Reported {
+        var values: [Any?] = []
+    }
+
+    @Test func editorValues() {
+        #expect(editor(.toggle, "yes").0.boolValue)
+        #expect(!editor(.toggle, NSNumber(value: false)).0.boolValue)
+        #expect(editor(.tags, "a, b,,c").0.tagsValue == ["a", "b", "c"])
+        #expect(editor(.tags, ["x", "y"]).0.stringValue == "x, y")
+        #expect(editor(.menu, "other", choices: ["a"]).0.shownChoices.map(\.value) == ["a", "other"]) // the value isn't lost
+        let (kept, _) = editor(.text, "x")
+        #expect(kept.makeView() === kept.makeView()) // the same control, which keeps its focus
+    }
+
+#if canImport(AppKit)
+    /// perform the action of the
+    /// @param control provided
+    func fire(_ control: NSControl) {
+        control.sendAction(control.action, to: control.target)
+    }
+
+    @Test func textRoundTrip() {
+        let (text, reported) = editor(.text, "old")
+        let field = text.makeView() as! NSTextField
+        #expect(field.stringValue == "old")
+        field.stringValue = "new"
+        fire(field)
+        #expect(text.value as? String == "new")
+        #expect(reported.values.last as? String == "new")
+
+        let (combo, _) = editor(.text, "a", choices: ["a", "b"])
+        let box = combo.makeView() as! NSComboBox
+        #expect(box.numberOfItems == 2)
+        box.stringValue = "b"
+        fire(box)
+        #expect(combo.value as? String == "b")
+    }
+
+    @Test func tagsRoundTrip() {
+        let (tags, reported) = editor(.tags, ["a"])
+        let field = tags.makeView() as! NSTokenField
+        field.objectValue = ["a", "b"]
+        fire(field)
+        #expect(tags.value as? [String] == ["a", "b"])
+        #expect(reported.values.count == 1)
+    }
+
+    @Test func menuRoundTrip() {
+        let (menu, reported) = editor(.menu, "↑", choices: ["⇈", "↑", "↓"])
+        let popUp = menu.makeView() as! NSPopUpButton
+        #expect(popUp.indexOfSelectedItem == 1)
+        popUp.selectItem(at: 2)
+        fire(popUp)
+        #expect(menu.value as? String == "↓")
+        #expect(reported.values.last as? String == "↓")
+    }
+
+    @Test func toggleRoundTrip() {
+        let (toggle, reported) = editor(.toggle, NSNumber(value: false))
+        let check = toggle.makeView() as! NSButton
+        #expect(check.state == .off)
+        check.state = .on
+        fire(check)
+        #expect(toggle.boolValue)
+        #expect(reported.values.last as? Bool == true)
+    }
+
+    @Test func radioRoundTrip() {
+        let (radio, reported) = editor(.radio, "a", choices: ["a", "b"])
+        let group = radio.makeView() as! NSStackView
+        let buttons = group.arrangedSubviews.compactMap { $0 as? NSButton }
+        #expect(buttons.map(\.state) == [.on, .off])
+        fire(buttons[1])
+        #expect(buttons.map(\.state) == [.off, .on])
+        #expect(radio.value as? String == "b")
+        #expect(reported.values.count == 1)
+    }
+
+    @Test func buttonReportsItsValue() {
+        let (button, reported) = editor(.button, "Remove")
+        let control = button.makeView() as! NSButton
+        #expect(control.title == "Remove")
+        fire(control)
+        fire(control)
+        #expect(reported.values.compactMap { $0 as? String } == ["Remove", "Remove"])
+    }
+
+    @Test func colorRoundTrip() {
+        let (color, reported) = editor(.color, "#FF8000")
+        let well = color.makeView() as! NSColorWell
+        #expect(well.color.usingColorSpace(.sRGB)?.redComponent == 1)
+        well.color = ILColor(srgbRed: 0, green: 128.0 / 255, blue: 1, alpha: 1)
+        fire(well)
+        #expect(color.value as? String == "#0080FF")
+        #expect(reported.values.count == 1)
+    }
+
+    @Test func textFillsTheLine() {
+        let (text, _) = editor(.text, "x")
+        let size = text.size(of: text.makeView(), lineWidth: 300, font: nil)
+        #expect(size.width == 298)
+        #expect(size.height > 0)
+    }
+#endif
+}

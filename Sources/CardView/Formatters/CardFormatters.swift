@@ -196,6 +196,11 @@ open class CardURLFormatter: CardFormatter, @unchecked Sendable {
         super.init()
     }
 
+    /// the default link color, so formatters can be made by class name, e.g. by `CardKeyValueLabels`
+    public override convenience init() {
+        self.init(linkColor: nil)
+    }
+
     public required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
@@ -213,6 +218,96 @@ open class CardURLFormatter: CardFormatter, @unchecked Sendable {
             attributes[.foregroundColor] = linkColor
         }
         return NSAttributedString(string: url.absoluteString, attributes: attributes)
+    }
+}
+
+// MARK: -
+
+/// formats URLs and strings of them as clickable links: `https:`, `lit:` and the like as themselves,
+/// a `data:git/commit,<sha>` as `commit` and the commit's short hash
+@objc(CardLinkFormatter)
+@objcMembers
+open class CardLinkFormatter: CardURLFormatter, @unchecked Sendable {
+    /// the prefix of a git commit's `data:` URL
+    public static let commitPrefix = "data:git/commit,"
+    /// the number of characters of a commit's hash shown
+    public var commitLength = 7
+
+    /// @returns the URL of the
+    /// @param obj provided, a URL or a string with a scheme, nil if it isn't one
+    static func url(_ obj: Any?) -> URL? {
+        if let url = obj as? URL {
+            return url
+        }
+        guard let string = (obj as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !string.contains(" "), let url = URL(string: string), url.scheme != nil else {
+            return nil
+        }
+        return url
+    }
+
+    /// the text shown for the
+    /// @param url provided
+    open func text(_ url: URL) -> String {
+        let string = url.absoluteString
+        guard string.hasPrefix(Self.commitPrefix) else { return string }
+        return "commit " + string.dropFirst(Self.commitPrefix.count).prefix(commitLength)
+    }
+
+    open override func string(for obj: Any?) -> String? {
+        Self.url(obj).map(text) ?? obj.map { String(describing: $0) }
+    }
+
+    open override func attributedString(for obj: Any, withDefaultAttributes attrs: [NSAttributedString.Key: Any]? = nil) -> NSAttributedString? {
+        guard let url = Self.url(obj) else {
+            return NSAttributedString(string: String(describing: obj), attributes: attrs)
+        }
+        var attributes = attrs ?? [:]
+        if url.absoluteString.hasPrefix(Self.commitPrefix) {
+            attributes = CardFormatter.monospaceAttributes(attributes)
+        }
+        attributes[.link] = url
+        attributes[.underlineStyle] = NSUnderlineStyle.single.rawValue
+        if let linkColor {
+            attributes[.foregroundColor] = linkColor
+        }
+        return NSAttributedString(string: text(url), attributes: attributes)
+    }
+}
+
+// MARK: -
+
+/// formats the values a key enumerates with their labels, e.g. 1 as "One", and its other values with the formatter provided
+@objc(CardValuesFormatter)
+@objcMembers
+open class CardValuesFormatter: CardFormatter, @unchecked Sendable {
+    /// the label of each value, by its description
+    public let values: [String: String]
+    /// the formatter of the values without labels
+    public let formatter: Formatter?
+
+    public init(values: [String: String], formatter: Formatter?) {
+        self.values = values
+        self.formatter = formatter
+        super.init()
+    }
+
+    public required init?(coder: NSCoder) {
+        values = [:]
+        formatter = nil
+        super.init(coder: coder)
+    }
+
+    open override func string(for obj: Any?) -> String? {
+        guard let obj else { return nil }
+        return values["\(obj)"] ?? formatter?.string(for: obj) ?? super.string(for: obj)
+    }
+
+    open override func attributedString(for obj: Any, withDefaultAttributes attrs: [NSAttributedString.Key: Any]? = nil) -> NSAttributedString? {
+        if values["\(obj)"] == nil, let formatter {
+            return CardFormatter.attributedString(obj, formatter: formatter, attributes: attrs ?? [:])
+        }
+        return super.attributedString(for: obj, withDefaultAttributes: attrs)
     }
 }
 
