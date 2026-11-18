@@ -931,7 +931,10 @@ struct FormatterTests {
         #expect(editor(.tags, ["x", "y"]).0.stringValue == "x, y")
         #expect(editor(.menu, "other", choices: ["a"]).0.shownChoices.map(\.value) == ["a", "other"]) // the value isn't lost
         let (kept, _) = editor(.text, "x")
-        #expect(kept.makeView() === kept.makeView()) // the same control, which keeps its focus
+        let first = kept.makeView()
+        let second = kept.makeView()
+        #expect(first !== second && kept.control?.superview === second) // the same control, which keeps its focus, in the newest holder
+        #expect(first.subviews.isEmpty)
     }
 
 #if canImport(AppKit)
@@ -943,7 +946,7 @@ struct FormatterTests {
 
     @Test func textRoundTrip() {
         let (text, reported) = editor(.text, "old")
-        let field = text.makeView() as! NSTextField
+        let field = text.control(NSTextField.self)
         #expect(field.stringValue == "old")
         field.stringValue = "new"
         fire(field)
@@ -951,7 +954,7 @@ struct FormatterTests {
         #expect(reported.values.last as? String == "new")
 
         let (combo, _) = editor(.text, "a", choices: ["a", "b"])
-        let box = combo.makeView() as! NSComboBox
+        let box = combo.control(NSComboBox.self)
         #expect(box.numberOfItems == 2)
         box.stringValue = "b"
         fire(box)
@@ -960,7 +963,7 @@ struct FormatterTests {
 
     @Test func tagsRoundTrip() {
         let (tags, reported) = editor(.tags, ["a"])
-        let field = tags.makeView() as! NSTokenField
+        let field = tags.control(NSTokenField.self)
         field.objectValue = ["a", "b"]
         fire(field)
         #expect(tags.value as? [String] == ["a", "b"])
@@ -969,7 +972,7 @@ struct FormatterTests {
 
     @Test func menuRoundTrip() {
         let (menu, reported) = editor(.menu, "↑", choices: ["⇈", "↑", "↓"])
-        let popUp = menu.makeView() as! NSPopUpButton
+        let popUp = menu.control(NSPopUpButton.self)
         #expect(popUp.indexOfSelectedItem == 1)
         popUp.selectItem(at: 2)
         fire(popUp)
@@ -979,7 +982,7 @@ struct FormatterTests {
 
     @Test func toggleRoundTrip() {
         let (toggle, reported) = editor(.toggle, NSNumber(value: false))
-        let check = toggle.makeView() as! NSButton
+        let check = toggle.control(NSButton.self)
         #expect(check.state == .off)
         check.state = .on
         fire(check)
@@ -989,7 +992,7 @@ struct FormatterTests {
 
     @Test func radioRoundTrip() {
         let (radio, reported) = editor(.radio, "a", choices: ["a", "b"])
-        let group = radio.makeView() as! NSStackView
+        let group = radio.control(NSStackView.self)
         let buttons = group.arrangedSubviews.compactMap { $0 as? NSButton }
         #expect(buttons.map(\.state) == [.on, .off])
         fire(buttons[1])
@@ -1000,7 +1003,7 @@ struct FormatterTests {
 
     @Test func buttonReportsItsValue() {
         let (button, reported) = editor(.button, "Remove")
-        let control = button.makeView() as! NSButton
+        let control = button.control(NSButton.self)
         #expect(control.title == "Remove")
         fire(control)
         fire(control)
@@ -1009,7 +1012,7 @@ struct FormatterTests {
 
     @Test func colorRoundTrip() {
         let (color, reported) = editor(.color, "#FF8000")
-        let well = color.makeView() as! NSColorWell
+        let well = color.control(NSColorWell.self)
         #expect(well.color.usingColorSpace(.sRGB)?.redComponent == 1)
         well.color = ILColor(srgbRed: 0, green: 128.0 / 255, blue: 1, alpha: 1)
         fire(well)
@@ -1027,4 +1030,14 @@ struct FormatterTests {
         #expect(text.size(of: text.makeView(), lineWidth: 100, font: nil).width == 98)
     }
 #endif
+}
+
+// MARK: -
+
+extension CardEditorAttachment {
+    /// the editor's control, laid out in a holder, as the type provided
+    @MainActor func control<Control>(_ type: Control.Type) -> Control {
+        _ = makeView()
+        return control as! Control
+    }
 }

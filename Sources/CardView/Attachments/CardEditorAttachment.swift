@@ -22,8 +22,8 @@ open class CardEditorAttachment: CardAttachment, @unchecked Sendable {
     public var width: CGFloat?
     let onChange: @MainActor (Any?) -> Void
 
-    /// the editor's control, made the first time it's laid out, so it keeps its focus when the text is laid out again
-    private var control: ILView?
+    /// the editor's control, made the first time it's laid out, so it keeps its value and focus when the text is laid out again
+    private(set) var control: ILView?
 #if canImport(AppKit)
     /// the targets of the AppKit controls, which call their actions
     private var trampolines: [ButtonTrampoline] = []
@@ -91,22 +91,30 @@ open class CardEditorAttachment: CardAttachment, @unchecked Sendable {
 
     // MARK: - CardAttachment
 
+    /// a view holding the editor's control, each time the text lays the editor out the control moves into a new one:
+    /// TextKit removes the views of the layout it replaces from their superviews, and would take the control with them
     @MainActor open override func makeView() -> ILView {
-        if let control {
-            return control
-        }
-        let made = makeControl()
-        control = made
-        return made
+        let control = control ?? makeControl()
+        self.control = control
+        let holder = ILView(frame: CGRect(origin: .zero, size: control.frame.size))
+        control.frame = holder.bounds
+#if canImport(AppKit)
+        control.autoresizingMask = [.width, .height]
+#else
+        control.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+#endif
+        holder.addSubview(control)
+        return holder
     }
 
     /// text and tags fields fill the rest of the line, the other controls are their own size
     @MainActor open override func size(of view: ILView, lineWidth: CGFloat, font: ILFont?) -> CGSize {
+        let control = control ?? view
         switch type {
         case .text, .tags:
-            return CGSize(width: min(width ?? .greatestFiniteMagnitude, max(lineWidth - 2, 40)), height: Self.height(of: view))
+            return CGSize(width: min(width ?? .greatestFiniteMagnitude, max(lineWidth - 2, 40)), height: Self.height(of: control))
         default:
-            return CardAttachment.fit(view.cardFittingSize, in: lineWidth)
+            return CardAttachment.fit(control.cardFittingSize, in: lineWidth)
         }
     }
 
