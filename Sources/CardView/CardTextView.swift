@@ -899,6 +899,28 @@ open class CardTextView: ILTextView {
     }
 #endif
 
+    // MARK: - Copying
+
+#if canImport(AppKit)
+    /// the selection's plain text is copied without attachment characters, and with line breaks as newlines
+    open override func writeSelection(to pboard: NSPasteboard, types: [NSPasteboard.PasteboardType]) -> Bool {
+        let written = super.writeSelection(to: pboard, types: types)
+        if written, types.contains(where: { $0 == .string || $0.rawValue == "NSStringPboardType" }) { // the text view's own copy uses the legacy name
+            let text = selectedRanges.map { storage.attributedSubstring(from: $0.rangeValue).string }.joined(separator: "\n")
+            pboard.setString(CardKeyValueText.plainText(text), forType: .string)
+        }
+        return written
+    }
+#elseif !os(tvOS)
+    /// the selection's plain text is copied without attachment characters, and with line breaks as newlines
+    open override func copy(_ sender: Any?) {
+        super.copy(sender)
+        var item = UIPasteboard.general.items.first ?? [:]
+        item["public.utf8-plain-text"] = CardKeyValueText.plainText(storage.attributedSubstring(from: selectedRange).string)
+        UIPasteboard.general.items = [item]
+    }
+#endif
+
     // MARK: - Formatter Registry
 
     private static var formatters: [ObjectIdentifier: Formatter] = [:]

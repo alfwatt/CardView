@@ -1034,6 +1034,116 @@ struct FormatterTests {
 
 // MARK: -
 
+@MainActor struct KeyValueTextTests {
+
+    let labels = CardKeyValueLabels(labels: ["type": ["label": "Type"]])
+
+    func text(_ string: String) -> NSAttributedString {
+        NSAttributedString(string: string)
+    }
+
+    @Test func parsesLines() {
+        let string = text("\tType\taffordance\nowner\tme\nplan: one\u{2028}two\n\n  \nkey only\n")
+        let lines = CardKeyValueText.lines(in: string, range: NSRange(location: 0, length: string.length))
+        #expect(lines.map(\.key) == ["Type", "owner", "plan", "key only"])
+        #expect(lines.map(\.value) == ["affordance", "me", "one\ntwo", ""])
+        #expect(lines[0].keyRange == NSRange(location: 1, length: 4))
+        #expect(lines[0].valueRange == NSRange(location: 6, length: 10))
+    }
+
+    @Test func tabsBeforeColons() {
+        let string = text("url\thttps://istumbler.net")
+        let line = CardKeyValueText.lines(in: string, range: NSRange(location: 0, length: string.length)).first
+        #expect(line?.key == "url")
+        #expect(line?.value == "https://istumbler.net")
+    }
+
+    @Test func lineRoundTrip() {
+        let line = CardKeyValueText.line(key: "plan", value: "1. one\n2. two")
+        #expect(line == "\tplan\t1. one\u{2028}2. two")
+        let parsed = CardKeyValueText.lines(in: text(line), range: NSRange(location: 0, length: (line as NSString).length))
+        #expect(parsed.first?.value == "1. one\n2. two")
+        #expect(CardKeyValueText.plainText("a\u{FFFC}b\u{2028}c") == "ab\nc")
+    }
+
+    @Test func readOnlyLines() {
+        let card = makeCard()
+        card.appendKeyValueLine("type", value: "affordance", labels: labels)
+        card.appendKeyValueLine("links", value: "lit:3f93fa15", labels: labels, readOnly: true)
+        card.appendKeyValueLine("owner", value: "me", labels: labels)
+        #expect(card.storage.string == "\tType\taffordance\n\tlinks\tlit:3f93fa15\n\towner\tme\n")
+        let lines = CardKeyValueText.lines(in: card.storage, range: NSRange(location: 0, length: card.storage.length))
+        #expect(lines.map(\.key) == ["Type", "owner"])
+
+        #expect(card.allowsKeyValueEdit(in: NSRange(location: 6, length: 3), replacement: "x")) // in a value
+        #expect(!card.allowsKeyValueEdit(in: NSRange(location: 20, length: 2), replacement: "")) // in the read-only line
+        #expect(!card.allowsKeyValueEdit(in: NSRange(location: 17, length: 0), replacement: "x")) // before it
+        #expect(!card.allowsKeyValueEdit(in: NSRange(location: 16, length: 1), replacement: "")) // joining it to the line before
+        #expect(card.allowsKeyValueEdit(in: NSRange(location: 16, length: 0), replacement: "\n")) // a new line before it
+        card.appendRule()
+        #expect(!card.allowsKeyValueEdit(in: NSRange(location: card.storage.length - 2, length: 2), replacement: "")) // the rule
+    }
+
+    @Test func stylingKeepsTheText() {
+        let card = makeCard()
+        card.appendKeyValueLine("type", value: "affordance", labels: labels)
+        card.storage.append(NSAttributedString(string: "\tdepends\tlit:beeaa20f\n", attributes: [.font: NSFont.systemFont(ofSize: 30)]))
+        let before = card.storage.string
+        let all = NSRange(location: 0, length: card.storage.length)
+        card.styleKeyValueLines(in: all)
+        card.styleKeyValueLines(in: all)
+        #expect(card.storage.string == before)
+        let depends = (before as NSString).range(of: "depends")
+        let value = (before as NSString).range(of: "lit:beeaa20f")
+        #expect((card.storage.attribute(.font, at: value.location, effectiveRange: nil) as? NSFont)?.pointSize == 12) // the pasted font is gone
+        #expect(card.storage.attribute(.font, at: depends.location, effectiveRange: nil) as? NSFont
+                == card.attributes(.strong)[.font] as? NSFont)
+        #expect((card.storage.attribute(.link, at: value.location, effectiveRange: nil) as? URL)?.absoluteString == "lit:beeaa20f")
+    }
+
+    @Test func copiesPlainText() {
+        let card = makeCard()
+        card.appendKeyValueLine("type", value: "one\ntwo", labels: labels)
+        card.appendButton("Act") {}
+        card.selection = NSRange(location: 0, length: card.storage.length)
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("CardViewTests.copy"))
+        pasteboard.clearContents()
+        #expect(card.writeSelection(to: pasteboard, types: card.writablePasteboardTypes)) // as Copy does
+        #expect(pasteboard.string(forType: .string) == "\tType\tone\ntwo\n")
+    }
+
+    @Test func dropDowns() {
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 432, height: 600), styleMask: [.titled], backing: .buffered, defer: false)
+        let card = makeCard()
+        window.contentView = card
+        card.appendKeyValueLine("type", value: "a", labels: labels)
+        card.appendKeyValueLine("other", value: "longer value", labels: labels)
+        var chosen: [String] = []
+        let dropDowns = CardDropDowns()
+        let choices = [CardChoice(value: "a"), CardChoice(value: "b")]
+        dropDowns.update(card, items: [CardDropDowns.Item(location: 7, choices: choices, current: "a") { chosen.append($0) },
+                                       CardDropDowns.Item(location: 27, choices: choices, current: "b") { chosen.append($0) }])
+        #expect(dropDowns.buttons.count == 2)
+        #expect(dropDowns.buttons.allSatisfy { $0.superview === card })
+        let first = dropDowns.buttons[0].frame
+        let second = dropDowns.buttons[1].frame
+        #expect(second.minY > first.minY) // on the next line
+        #expect(second.minX > first.minX) // after the longer value
+
+        let popUp = dropDowns.buttons[0] as! NSPopUpButton
+        #expect(popUp.itemArray.map(\.state) == [.off, .on, .off])
+        popUp.selectItem(at: 2)
+        popUp.sendAction(popUp.action, to: popUp.target)
+        #expect(chosen == ["b"])
+
+        dropDowns.update(card, items: [])
+        #expect(dropDowns.buttons.isEmpty)
+        #expect(popUp.superview == nil)
+    }
+}
+
+// MARK: -
+
 extension CardEditorAttachment {
     /// the editor's control, laid out in a holder, as the type provided
     @MainActor func control<Control>(_ type: Control.Type) -> Control {
