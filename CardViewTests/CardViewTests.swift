@@ -1184,6 +1184,34 @@ struct FormatterTests {
         #expect(popUp.superview == nil)
     }
 
+    @Test func dropDownActions() {
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 432, height: 600), styleMask: [.titled], backing: .buffered, defer: false)
+        let card = makeCard()
+        window.contentView = card
+        card.appendKeyValueLine("link", value: "https://example.com", labels: labels)
+        var chosen: [String] = []
+        var performed: [String] = []
+        let dropDowns = CardDropDowns()
+        let item = CardDropDowns.Item(location: 6, choices: [CardChoice(value: "a")], current: "",
+                                      actions: [CardDropDowns.Action("Open", symbol: "link") { performed.append("open") },
+                                                CardDropDowns.Action("Find") { performed.append("find") }],
+                                      symbol: "circle.fill", tint: .red, primary: { performed.append("primary") },
+                                      help: "Changed") { chosen.append($0) }
+        dropDowns.update(card, items: [item])
+        let popUp = dropDowns.buttons[0] as! NSPopUpButton
+        #expect(popUp.itemArray.map(\.title) == ["", "a", "", "Open", "Find"]) // the button, the choices, a separator, the actions
+        #expect(popUp.itemArray[2].isSeparatorItem)
+        #expect(popUp.toolTip == "Changed")
+        popUp.selectItem(at: 4)
+        popUp.sendAction(popUp.action, to: popUp.target)
+        popUp.selectItem(at: 1)
+        popUp.sendAction(popUp.action, to: popUp.target)
+        #expect(performed == ["find"])
+        #expect(chosen == ["a"])
+        (popUp as? CardDropDownButton)?.primary?()
+        #expect(performed == ["find", "primary"])
+    }
+
     @Test func dropDownsBeforeValues() {
         let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 432, height: 600), styleMask: [.titled], backing: .buffered, defer: false)
         let card = makeCard()

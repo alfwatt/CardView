@@ -235,7 +235,7 @@ open class CardLinkFormatter: CardURLFormatter, @unchecked Sendable {
 
     /// @returns the URL of the
     /// @param obj provided, a URL or a string with a scheme, nil if it isn't one
-    static func url(_ obj: Any?) -> URL? {
+    public static func url(_ obj: Any?) -> URL? {
         if let url = obj as? URL {
             return url
         }
