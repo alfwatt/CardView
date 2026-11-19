@@ -606,6 +606,8 @@ struct FormatterTests {
         "The serial is >!C02XL0GHJGH5!<, and >!**bold** secret!< too",
         ">!a spoiler!< starts the line",
         "\\>!not a spoiler!\\< or a quote",
+        "- [ ] to do\n- [x] done",
+        "\\[a\\](b) isn't a link, \\[not\\] a box",
     ])
     func roundTrip(_ markdown: String) throws {
         let written = CardMarkdown.markdown(from: try read(markdown))
@@ -1182,6 +1184,26 @@ struct FormatterTests {
         dropDowns.update(card, items: [])
         #expect(dropDowns.buttons.isEmpty)
         #expect(popUp.superview == nil)
+    }
+
+    @Test func formatting() {
+        let card = makeCard()
+        card.isEditable = true
+        card.append("Some text")
+        let formatting = CardFormatting()
+        formatting.card = card
+        card.selection = NSRange(location: 0, length: 4)
+        formatting.selectionChanged()
+        #expect(!formatting.isBold)
+        formatting.toggleBold()
+        #expect(formatting.isBold)
+        #expect((card.storage.attribute(.font, at: 0, effectiveRange: nil) as! ILFont).isBold)
+        formatting.setBlock(.listItem(ordered: false, depth: 0))
+        #expect(formatting.isBlock(.listItem(ordered: false, depth: 3)))
+        #expect(card.markdown.hasPrefix("- **Some**"))
+        formatting.isEnabled = false // e.g. the selection is outside the part of the card that's formatted
+        formatting.toggleItalic()
+        #expect(!formatting.isItalic)
     }
 
     @Test func dropDownActions() {

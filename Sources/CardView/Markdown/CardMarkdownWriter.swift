@@ -293,8 +293,16 @@ struct CardMarkdownWriter {
     static func escaped(_ text: String) -> String {
         var escaped = ""
         let characters = Array(text)
+        /// a task list's box, `[ ]` or `[x]`, which can't start a link, so it's written as it is
+        func isTaskBox(at start: Int) -> Bool {
+            start >= 0 && start + 2 < characters.count && characters[start] == "[" && characters[start + 2] == "]"
+                && [" ", "x", "X"].contains(characters[start + 1])
+                && (start + 3 == characters.count || characters[start + 3] != "(")
+        }
         for (index, character) in characters.enumerated() {
             switch character {
+            case "[" where isTaskBox(at: index), "]" where isTaskBox(at: index - 2):
+                break
             case "\\", "*", "`", "[", "]", "<":
                 escaped.append("\\")
             case "_":
