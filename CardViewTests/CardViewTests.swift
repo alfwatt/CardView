@@ -377,6 +377,49 @@ func symbol(_ name: String) -> ILImage {
         #expect(card.action(at: 0) == nil)
     }
 
+    @Test func anchor() {
+        let card = makeCard()
+        card.appendLink(URL(string: "#second")!, text: "Go")
+        card.append(" ")
+        card.appendLink(URL(string: "#missing")!, text: "Nowhere")
+        card.appendNewline()
+        card.appendAnchor("first") { card.append("First", style: .subheader) }
+        card.appendNewline()
+        for line in 0..<40 {
+            card.append("line \(line)")
+            card.appendNewline()
+        }
+        let second = card.appendAnchor("second") {
+            card.append("Second", style: .subheader)
+            card.append(" more")
+        }
+        #expect(second.string == "Second more")
+        let range = card.anchorRange("second")
+        #expect(range.map { (card.storage.string as NSString).substring(with: $0) } == "Second more")
+        #expect(card.anchorRange("missing") == nil)
+        #expect(card.anchorLink(at: 0) == "second") // a link to an anchor the card has
+        #expect(card.anchorLink(at: 4) == nil) // to one it doesn't
+        #expect(card.anchorLink(at: card.storage.length - 1) == nil) // not a link
+        let first = card.anchorRect("first")
+        let secondRect = card.anchorRect("second")
+        #expect(first != nil && secondRect != nil)
+        #expect((first?.minY ?? 0) < (secondRect?.minY ?? 0))
+        #expect(card.scrollToAnchor("second"))
+        #expect(!card.scrollToAnchor("missing"))
+
+        card.highlightAnchor("first")
+        #expect(card.highlightedAnchor == "first")
+        #expect(card.storage.attribute(.backgroundColor, at: card.anchorRange("first")!.location, effectiveRange: nil) != nil)
+        card.highlightAnchor("second")
+        #expect(card.storage.attribute(.backgroundColor, at: card.anchorRange("first")!.location, effectiveRange: nil) == nil)
+        #expect(card.storage.attribute(.backgroundColor, at: card.anchorRange("second")!.location, effectiveRange: nil) != nil)
+        card.highlightAnchor(nil)
+        #expect(card.highlightedAnchor == nil)
+        #expect(card.storage.attribute(.backgroundColor, at: card.anchorRange("second")!.location, effectiveRange: nil) == nil)
+        card.clearCard()
+        #expect(card.anchorRange("first") == nil)
+    }
+
     @Test func spoiler() {
         let card = makeCard()
         card.append("Serial ")

@@ -127,6 +127,7 @@ open class CardTextView: ILTextView {
     public func clearCard() {
         storage.setAttributedString(NSAttributedString())
         actions.removeAll()
+        highlightedAnchor = nil
         for style in columnStyles.keyEnumerator().allObjects as! [NSParagraphStyle] where !styleStack.contains(where: { $0 === style }) {
             columnStyles.removeObject(forKey: style)
         }
@@ -681,6 +682,108 @@ open class CardTextView: ILTextView {
         return attributes
     }
 
+    // MARK: - Anchors
+
+    /// the anchor whose text is highlighted, see `highlightAnchor(_:)`
+    public private(set) var highlightedAnchor: String?
+
+    /// append the text appended by the
+    /// @param content closure provided as the anchor with the
+    /// @param name provided, which `#name` links in the card and `scrollToAnchor(_:)` scroll to
+    /// @returns the text appended
+    @discardableResult
+    public func appendAnchor(_ name: String, _ content: () -> Void) -> NSAttributedString {
+        let start = storage.length
+        content()
+        let range = NSRange(location: start, length: storage.length - start)
+        storage.addAttribute(.cardAnchor, value: name, range: range)
+        return storage.attributedSubstring(from: range)
+    }
+
+    /// @returns the range of the anchor with the
+    /// @param name provided, from the start of its first run to the end of its last, or nil if there isn't one
+    public func anchorRange(_ name: String) -> NSRange? {
+        var found: NSRange?
+        storage.enumerateAttribute(.cardAnchor, in: NSRange(location: 0, length: storage.length)) { value, range, _ in
+            guard value as? String == name else { return }
+            found = found.map { NSUnionRange($0, range) } ?? range
+        }
+        return found
+    }
+
+    /// @returns the name of the anchor a `#name` link at the
+    /// @param index provided, or the character before it, goes to, if the card has that anchor
+    func anchorLink(at index: Int) -> String? {
+        let storage = storage
+        for location in [index, index - 1] where location >= 0 && location < storage.length {
+            let link = storage.attribute(.link, at: location, effectiveRange: nil)
+            guard let string = (link as? URL)?.relativeString ?? link as? String else { continue }
+            guard string.hasPrefix("#") else { return nil }
+            let name = String(string.dropFirst()).removingPercentEncoding ?? String(string.dropFirst())
+            return anchorRange(name) == nil ? nil : name
+        }
+        return nil
+    }
+
+    /// @returns the rect of the anchor with the
+    /// @param name provided, in the card's coordinates, or nil if there isn't one
+    public func anchorRect(_ name: String) -> CGRect? {
+        guard let range = anchorRange(name), let manager = textLayoutManager, let content = manager.textContentManager,
+              let start = content.location(content.documentRange.location, offsetBy: range.location),
+              let end = content.location(start, offsetBy: range.length),
+              let textRange = NSTextRange(location: start, end: end) else { return nil }
+        manager.ensureLayout(for: textRange)
+        var rect: CGRect?
+        manager.enumerateTextSegments(in: textRange, type: .standard, options: []) { _, frame, _, _ in
+            rect = rect.map { $0.union(frame) } ?? frame
+            return true
+        }
+#if canImport(AppKit)
+        let origin = textContainerOrigin
+#else
+        let origin = CGPoint(x: textContainerInset.left, y: textContainerInset.top)
+#endif
+        return rect?.offsetBy(dx: origin.x, dy: origin.y)
+    }
+
+    /// scroll the card's enclosing scroll view, or the card when it scrolls itself, so the anchor with the
+    /// @param name provided is at the top, as far as it can be
+    /// @returns true if there was an anchor to scroll to
+    @discardableResult
+    public func scrollToAnchor(_ name: String) -> Bool {
+        guard let rect = anchorRect(name) else { return false }
+#if canImport(AppKit)
+        // a rect as tall as the visible part of the scroll view, so the anchor ends up at the top rather than the bottom
+        let visible = enclosingScrollView?.contentView.bounds.height ?? rect.height
+        scrollToVisible(CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: max(rect.height, visible)))
+#else
+        var scrollView: UIScrollView? = isScrollEnabled ? self : nil
+        var ancestor = superview
+        while scrollView == nil, let view = ancestor {
+            scrollView = view as? UIScrollView
+            ancestor = view.superview
+        }
+        guard let scrollView else { return true }
+        let converted = scrollView === self ? rect : convert(rect, to: scrollView)
+        let visible = scrollView.bounds.inset(by: scrollView.adjustedContentInset).height
+        scrollView.scrollRectToVisible(CGRect(x: converted.minX, y: converted.minY, width: converted.width,
+                                              height: max(converted.height, visible)), animated: true)
+#endif
+        return true
+    }
+
+    /// highlight the text of the anchor with the
+    /// @param name provided, e.g. the part of the card a link went to, removing the highlight of the one before, nil removes it
+    public func highlightAnchor(_ name: String?) {
+        if let highlightedAnchor, let range = anchorRange(highlightedAnchor) {
+            storage.removeAttribute(.backgroundColor, range: range)
+        }
+        highlightedAnchor = nil
+        guard let name, let range = anchorRange(name) else { return }
+        storage.addAttribute(.backgroundColor, value: CardColor.accent.withAlphaComponent(0.15), range: range)
+        highlightedAnchor = name
+    }
+
     // MARK: - Spoilers
 
     /// clicking or tapping a `>!spoiler!<` reveals it, and again hides it, when it's false spoilers stay hidden, e.g. for screenshots
@@ -862,6 +965,9 @@ open class CardTextView: ILTextView {
         if let action = action(at: index) {
             action()
         }
+        else if let anchor = anchorLink(at: index) {
+            scrollToAnchor(anchor)
+        }
         else if toggleSpoiler(at: index), !isEditable {
             return
         }
@@ -885,13 +991,16 @@ open class CardTextView: ILTextView {
             return super.gestureRecognizerShouldBegin(gestureRecognizer)
         }
         guard let index = characterIndex(at: gestureRecognizer.location(in: self)) else { return false }
-        return action(at: index) != nil || (revealsSpoilers && spoiler(at: index) != nil)
+        return action(at: index) != nil || anchorLink(at: index) != nil || (revealsSpoilers && spoiler(at: index) != nil)
     }
 
     @objc private func onActionTap(_ tap: UITapGestureRecognizer) {
         guard let index = characterIndex(at: tap.location(in: self)) else { return }
         if let action = action(at: index) {
             action()
+        }
+        else if let anchor = anchorLink(at: index) {
+            scrollToAnchor(anchor)
         }
         else {
             toggleSpoiler(at: index)

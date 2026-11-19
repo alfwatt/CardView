@@ -58,6 +58,9 @@ A good looking subclass of `NSTextView` and `UITextView`, laid out with TextKit 
 - **Spoilers**: `appendSpoiler(_:style:identifier:)` appends hidden text, `revealedSpoilers` keeps the identifiers
   of the ones revealed when the card is cleared and built again, and `revealsSpoilers = false` keeps them all hidden,
   e.g. for screenshots
+- **Anchors**: `appendAnchor(_:_:)` names the text appended in its closure, like an HTML `<a name>`, a `#name`
+  link in the card scrolls to it, as `scrollToAnchor(_:)` does, and `highlightAnchor(_:)` highlights one, e.g.
+  the part of the card a link went to
 - **Rules, Images, Buttons and Views**: `appendRule(color:width:)`, `appendImage(_:source:)`,
   `appendButton(_:image:action:)`, `appendButton(_:url:)`, `appendView(_:size:)`, which also embeds SwiftUI views
 - **Columns**: `paragraphStyle(columns:)`, `pushColumns(_:)` and `useColumns(_:)` lay text out in columns

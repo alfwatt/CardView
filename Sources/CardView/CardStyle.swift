@@ -139,4 +139,6 @@ public extension NSAttributedString.Key {
     static let cardFullKey = NSAttributedString.Key("CardFullKey")
     /// marks the line break between a key and its value in a card too narrow for their columns, it's a tab again when there's room
     static let cardKeyBreak = NSAttributedString.Key("CardKeyBreak")
+    /// the name of the anchor the text is in, which a `#name` link in the card scrolls to, like an HTML `<a name>`
+    static let cardAnchor = NSAttributedString.Key("CardAnchor")
 }
