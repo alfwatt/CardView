@@ -1140,6 +1140,27 @@ struct FormatterTests {
         #expect(dropDowns.buttons.isEmpty)
         #expect(popUp.superview == nil)
     }
+
+    @Test func dropDownsBeforeValues() {
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 432, height: 600), styleMask: [.titled], backing: .buffered, defer: false)
+        let card = makeCard()
+        window.contentView = card
+        card.useColumns([.right(.points(100)), .left(.points(CardDropDowns.size.width + CardDropDowns.spacing * 2))])
+        card.appendKeyValueLine("type", value: "a", labels: labels) // "\tType\ta\n", its value at 6
+        card.appendKeyValueLine("other", value: "longer value", labels: labels) // "\tOther\tlonger value\n", at 15
+        card.append("plain") // at 28, at the start of the line, with no room before it
+        let dropDowns = CardDropDowns()
+        let choices = [CardChoice(value: "a"), CardChoice(value: "b")]
+        dropDowns.update(card, items: [6, 15, 28].map { CardDropDowns.Item(location: $0, placement: .before, choices: choices, current: "a") { _ in } })
+        let frames = dropDowns.buttons.map(\.frame)
+        #expect(frames.count == 3)
+        #expect(frames[0].minX == frames[1].minX) // lined up, whatever the values' lengths
+        #expect(frames[1].minY > frames[0].minY)
+        let valueStart = card.textContainerOrigin.x + (card.textContainer?.lineFragmentPadding ?? 0) + 100
+            + CardDropDowns.size.width + CardDropDowns.spacing * 2
+        #expect(frames[0].maxX <= valueStart.rounded(.up)) // before the value
+        #expect(frames[2].minX > card.textContainerOrigin.x) // after the plain text's start instead
+    }
 }
 
 // MARK: -

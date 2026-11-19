@@ -11,26 +11,41 @@ import UIKit
 @MainActor
 public final class CardDropDowns {
 
-    /// A drop-down after the character at `location`, the end of a value, offering its `choices`
+    /// A drop-down beside the character at `location`, offering its `choices`: after the end of a value,
+    /// or before its start, so the drop-downs of values in a column line up
     public struct Item {
+        /// where the drop-down goes, beside `location`
+        public enum Placement: Sendable {
+            /// after `location`, e.g. the end of a value
+            case after
+            /// before `location`, e.g. the start of a value, after it instead when there's no room before it
+            case before
+        }
+
         public let location: Int
+        public let placement: Placement
         public let choices: [CardChoice]
         public let current: String
         public let choose: @MainActor (String) -> Void
 
-        public init(location: Int, choices: [CardChoice], current: String, choose: @escaping @MainActor (String) -> Void) {
+        public init(location: Int, placement: Placement = .after, choices: [CardChoice], current: String,
+                    choose: @escaping @MainActor (String) -> Void) {
             self.location = location
+            self.placement = placement
             self.choices = choices
             self.current = current
             self.choose = choose
         }
     }
 
+    /// the space between a drop-down and its value
+    public static let spacing: CGFloat = 4
+
     /// the size of a drop-down button
 #if canImport(AppKit)
-    static let size = CGSize(width: 18, height: 16)
+    public static let size = CGSize(width: 18, height: 16)
 #else
-    static let size = CGSize(width: 24, height: 24)
+    public static let size = CGSize(width: 24, height: 24)
 #endif
 
     /// the buttons, reused in order as the items change
@@ -75,7 +90,7 @@ public final class CardDropDowns {
 #endif
     }
 
-    /// place the buttons after the ends of their values
+    /// place the buttons beside their values
     public func layout() {
         guard let card, let manager = card.textLayoutManager else { return }
         manager.ensureLayout(for: manager.documentRange)
@@ -93,7 +108,9 @@ public final class CardDropDowns {
                 return false
             }
             guard !rect.isNull else { continue }
-            button.frame = CGRect(x: (origin.x + rect.maxX + 4).rounded(), y: (origin.y + rect.midY - Self.size.height / 2).rounded(),
+            let before = rect.minX - Self.spacing - Self.size.width
+            let x = item.placement == .before && before >= 0 ? before : rect.maxX + Self.spacing // no room before, e.g. a value under its key
+            button.frame = CGRect(x: (origin.x + x).rounded(), y: (origin.y + rect.midY - Self.size.height / 2).rounded(),
                                   width: Self.size.width, height: Self.size.height)
         }
     }
