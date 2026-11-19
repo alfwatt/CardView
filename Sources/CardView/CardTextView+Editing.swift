@@ -143,6 +143,8 @@ public extension CardTextView {
         let string = storage.string as NSString
         var changes: [(range: NSRange, marker: NSAttributedString)] = []
         var numbers: [Int] = []
+        /// whether the list at each depth is numbered, a list of the other kind starts counting again
+        var orders: [Bool] = []
         var previousIsList = false
         string.enumerateSubstrings(in: NSRange(location: 0, length: string.length), options: [.byParagraphs, .substringNotRequired]) { _, range, enclosing, _ in
             guard enclosing.length > 0 else { return }
@@ -160,9 +162,16 @@ public extension CardTextView {
             }
             if !previousIsList {
                 numbers = []
+                orders = []
             }
             numbers = Array(numbers.prefix(depth + 1))
+            orders = Array(orders.prefix(depth + 1))
             while numbers.count <= depth { numbers.append(0) }
+            while orders.count <= depth { orders.append(ordered) }
+            if orders[depth] != ordered {
+                numbers[depth] = 0
+                orders[depth] = ordered
+            }
             numbers[depth] += 1
             previousIsList = true
 

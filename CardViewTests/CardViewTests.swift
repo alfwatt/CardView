@@ -1186,6 +1186,16 @@ struct FormatterTests {
         #expect(popUp.superview == nil)
     }
 
+    @Test func markdownReadInIsNormalized() throws {
+        let card = makeCard()
+        card.isEditable = true
+        card.appendMarkdown("Before\n\n- one\n- two\n  - nested\n\n1. first\n2. second\n\n> quote\n\n---\n\nAfter")
+        let read = NSAttributedString(attributedString: card.storage)
+        card.normalizeBlocks()
+        #expect(card.storage.string == read.string) // a numbered list after a bulleted one counts from 1
+        #expect(card.storage.isEqual(to: read)) // so a card's text that isn't edited stays as it was read
+    }
+
     @Test func formatting() {
         let card = makeCard()
         card.isEditable = true
