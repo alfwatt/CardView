@@ -60,8 +60,8 @@ import SwiftUI
     }
 }
 
-/// A bar of formatting commands for a card: the block of the selected paragraphs, bold, italic and code,
-/// a rule and a link, each on when the selection is
+/// A bar of formatting commands for a card, in one control group: the block of the selected paragraphs, bold, italic
+/// and code, a rule and a link, each on when the selection is
 public struct CardFormatBar: View {
     let formatting: CardFormatting
     @State private var showingLinkPrompt = false
@@ -72,7 +72,7 @@ public struct CardFormatBar: View {
     }
 
     public var body: some View {
-        HStack(spacing: 2) {
+        ControlGroup {
             Menu {
                 block("Heading", .heading(1))
                 block("Subheading", .heading(2))
@@ -86,7 +86,6 @@ public struct CardFormatBar: View {
                 Label("Style", systemImage: "textformat.size")
             }
             .menuIndicator(.hidden)
-            .fixedSize()
             style("Bold", "bold", formatting.isBold) { $0.toggleBold() }
             style("Italic", "italic", formatting.isItalic) { $0.toggleItalic() }
             style("Code", "chevron.left.forwardslash.chevron.right", formatting.isCode) { $0.toggleCode() }
@@ -106,8 +105,8 @@ public struct CardFormatBar: View {
                 }
         }
         .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
         .controlSize(.small)
+        .fixedSize()
         .disabled(!formatting.canEdit)
     }
 
